@@ -1,0 +1,21 @@
+---
+- name: Verify the platform
+  hosts: control_plane
+  become: true
+  gather_facts: false
+  tasks:
+    - name: Run smoke tests on the node
+      ansible.builtin.script: ../tests/smoke/verify.sh
+      register: verify_result
+      changed_when: false
+      failed_when: false
+
+    - name: Show results
+      ansible.builtin.debug:
+        msg: "{{ verify_result.stdout_lines }}"
+
+    - name: Fail if any check failed
+      ansible.builtin.assert:
+        that: verify_result.rc == 0
+        fail_msg: "{{ verify_result.rc }} check(s) failed, see the output above"
+        quiet: true

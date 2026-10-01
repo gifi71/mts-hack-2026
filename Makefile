@@ -57,6 +57,10 @@ check-inventory:
 deploy: deps check-inventory ## Install Kubernetes and the platform (idempotent, safe to re-run)
 	$(VENV)/bin/ansible-playbook -i $(INVENTORY) ansible/site.yml $(ANSIBLE_ARGS)
 
+.PHONY: verify
+verify: deps check-inventory ## Smoke tests: Gateway API routing, Prometheus targets and queries, logs in Loki
+	$(VENV)/bin/ansible-playbook -i $(INVENTORY) ansible/verify.yml
+
 .PHONY: ssh
 ssh: deps check-inventory ## Open a shell on the node
 	$(VENV)/bin/ansible -i $(INVENTORY) control_plane -m ansible.builtin.ping >/dev/null
