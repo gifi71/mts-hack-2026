@@ -37,7 +37,7 @@ jobs:
           ansible-lint --profile production site.yml verify.yml info.yml
 
       - name: shellcheck
-        run: shellcheck tests/smoke/*.sh
+        run: shellcheck tests/smoke/*.sh scripts/*.sh docs/passport/build.sh
 
       - uses: opentofu/setup-opentofu@v2
         with:
