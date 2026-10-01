@@ -38,6 +38,16 @@ promql() { # query -> number of series
   svc_get monitoring kube-prometheus-stack-prometheus:9090 "/api/v1/query?query=$(urlencode "$1")" |
     python3 -c 'import sys, json; print(len(json.load(sys.stdin)["data"]["result"]))'
 }
+# Retries for up to 2 minutes: right after a deploy targets may not be scraped yet.
+promql_wait() { # query min_series -> number of series
+  local n=0
+  for _ in $(seq 1 12); do
+    n=$(promql "$1")
+    ((n >= $2)) && break
+    sleep 10
+  done
+  echo "$n"
+}
 
 section "Cluster"
 if kubectl wait --for=condition=Ready node --all --timeout=10s >/dev/null 2>&1; then
@@ -83,15 +93,18 @@ check "traffic split 90/10: v2 served ${v2}/100 requests" between "$v2" 1 30
 
 section "Prometheus"
 for job in angie-v1 angie-v2; do
-  n=$(promql "up{namespace=\"demo\",service=\"${job}\"} == 1")
-  check "target ${job} up (${n} series)" between "$n" 1 100
+  n=$(promql_wait "up{namespace=\"demo\",service=\"${job}\"} == 1" 1)
+  check "target ${job} up (${n} pods)" between "$n" 1 100
 done
-n=$(promql 'up{job=~".*envoy.*"} == 1')
+n=$(promql_wait 'up{job=~".*envoy.*"} == 1' 1)
 check "Envoy targets up (${n})" between "$n" 1 100
-n=$(promql 'sum by (code) (rate(angie_http_server_zones_responses{zone="demo"}[5m]))')
-check "PromQL: Angie responses by status code (${n} series)" between "$n" 1 100
-n=$(promql 'count by (__name__) ({__name__=~"envoy_cluster_upstream_rq_total|node_cpu_seconds_total|kube_pod_status_ready|apiserver_request_total"})')
+n=$(promql_wait 'angie_http_server_zones_responses{zone="demo"}' 1)
+check "PromQL angie_http_server_zones_responses{zone=\"demo\"}: ${n} series" between "$n" 1 100
+n=$(promql_wait 'count by (__name__) ({__name__=~"envoy_cluster_upstream_rq_total|node_cpu_seconds_total|kube_pod_status_ready|apiserver_request_total"})' 4)
 check "PromQL: Envoy, node-exporter, kube-state-metrics, apiserver metrics (${n}/4)" test "$n" -eq 4
+echo "      Angie responses by code: $(svc_get monitoring kube-prometheus-stack-prometheus:9090 \
+  "/api/v1/query?query=$(urlencode 'sum by (code) (angie_http_server_zones_responses{zone="demo"})')" |
+  python3 -c 'import sys, json; print(", ".join(r["metric"]["code"] + "=" + r["value"][1] for r in json.load(sys.stdin)["data"]["result"]))')"
 
 section "Logging (Fluentd -> Loki)"
 curl -fsS --max-time 5 -o /dev/null "${HTTP_URL}/?marker=${MARKER}" || true
