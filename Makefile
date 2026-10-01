@@ -79,6 +79,18 @@ ssh: deps check-inventory ## Open a shell on the node (same key, known_hosts and
 passport: ## Build docs/passport/Паспорт.pdf (needs pandoc, graphviz, chromium)
 	docs/passport/build.sh
 
+REPO_URL ?= https://github.com/gifi71/mts-hack-2026
+
+.PHONY: submission
+submission: passport ## Build dist/<SURNAME>.zip with Ссылка.txt and Паспорт.pdf (SURNAME=...)
+	@test -n "$(SURNAME)" || { echo "Usage: make submission SURNAME=<фамилия при регистрации>"; exit 1; }
+	mkdir -p dist/submission
+	printf '%s\n' "$(REPO_URL)" > dist/submission/Ссылка.txt
+	cp docs/passport/Паспорт.pdf dist/submission/Паспорт.pdf
+	cd dist/submission && rm -f "../$(SURNAME).zip" && python3 -m zipfile -c "../$(SURNAME).zip" Ссылка.txt Паспорт.pdf
+	@python3 -m zipfile -l "dist/$(SURNAME).zip"
+	@ls -l "dist/$(SURNAME).zip"
+
 ##@ Quality
 
 KUSTOMIZE_DIRS := gitops/platform/gateway gitops/platform/monitoring/manifests gitops/workloads/demo-app
