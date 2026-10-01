@@ -1,5 +1,8 @@
 # MTC ENGINEER HACK 2026: DevOps
 
+[![ci](https://github.com/gifi71/mts-hack-2026/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/gifi71/mts-hack-2026/actions/workflows/ci.yml)
+[![image-fluentd](https://github.com/gifi71/mts-hack-2026/actions/workflows/image-fluentd.yml/badge.svg?branch=main)](https://github.com/gifi71/mts-hack-2026/actions/workflows/image-fluentd.yml)
+
 Kubernetes-кластер на **kubeadm** с нуля на Ubuntu 24.04 и платформа вокруг демо-приложения:
 публикация через **Gateway API** (Envoy Gateway), метрики в **Prometheus**, логи через **Fluentd** в Loki.
 Всё ставится двумя командами и проверяется третьей:
@@ -9,7 +12,7 @@ make deploy    # Ansible: ОС → containerd → kubeadm → Calico → Argo CD
 make verify    # smoke-тесты: Gateway API, Prometheus, логи в Loki
 ```
 
-Повторный `make deploy` ничего не меняет (`changed=0`), это проверяется в CI.
+Повторный `make deploy` ничего не меняет (`changed=0`). CI проверяет это на каждом коммите: поднимает кластер на чистом раннере `ubuntu-24.04` (около 11 минут), повторяет развёртывание и запускает `make verify`.
 
 ## Содержание
 
