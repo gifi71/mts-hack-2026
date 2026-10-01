@@ -24,9 +24,9 @@ check() {
   local desc=$1; shift
   if "$@"; then pass "$desc"; else fail "$desc"; fi
 }
-# shellcheck disable=SC2329 # called through check
+# shellcheck disable=SC2317,SC2329 # called through check
 contains() { [[ "$1" == *"$2"* ]]; }
-# shellcheck disable=SC2329 # called through check
+# shellcheck disable=SC2317,SC2329 # called through check
 between() { (($1 >= $2 && $1 <= $3)); }
 
 # Kubernetes API proxy to a Service: no port-forward, works from the node.
