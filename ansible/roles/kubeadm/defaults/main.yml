@@ -1,5 +1,5 @@
 ---
-kubeadm_kubernetes_version: "{{ kubernetes_version }}"
+kubeadm_kubernetes_version: "{{ k8s_version }}"
 kubeadm_cluster_name: "{{ k8s_cluster_name }}"
 kubeadm_pod_subnet: "{{ k8s_pod_subnet }}"
 kubeadm_service_subnet: "{{ k8s_service_subnet }}"

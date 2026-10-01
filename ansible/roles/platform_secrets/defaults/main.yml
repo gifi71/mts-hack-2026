@@ -1,0 +1,8 @@
+---
+platform_secrets_kubeconfig: /etc/kubernetes/admin.conf
+
+# Secrets the platform expects before Argo CD syncs it. Values are generated
+# once on the node and never stored in the repository.
+platform_secrets_grafana_namespace: monitoring
+platform_secrets_grafana_secret: grafana-admin
+platform_secrets_grafana_user: admin

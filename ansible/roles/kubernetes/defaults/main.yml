@@ -1,5 +1,5 @@
 ---
-kubernetes_version: "1.36.5"
+kubernetes_version: "{{ k8s_version }}"
 kubernetes_package_revision: "1.1"
 kubernetes_minor: "{{ kubernetes_version.split('.')[:2] | join('.') }}"
 kubernetes_apt_url: "https://pkgs.k8s.io/core:/stable:/v{{ kubernetes_minor }}/deb/"
@@ -8,3 +8,6 @@ kubernetes_packages:
   - kubelet
   - kubeadm
   - kubectl
+
+# crictl for debugging containers on the node; versioned separately.
+kubernetes_cri_tools_version: "1.36.0-1.1"

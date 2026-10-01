@@ -48,9 +48,9 @@
     | selectattr('status.health.status', 'ne', 'Healthy') | list | length == 0
   retries: "{{ argocd_wait_retries }}"
   delay: "{{ argocd_wait_delay }}"
-  when: argocd_wait_for_apps
+  when: argocd_wait_for_apps | bool
 
 - name: Show Application status
   ansible.builtin.debug:
     msg: "{{ (argocd_apps.stdout | from_json)['items'] | map(attribute='metadata.name') | list }}: Synced, Healthy"
-  when: argocd_wait_for_apps
+  when: argocd_wait_for_apps | bool

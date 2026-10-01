@@ -1,6 +1,10 @@
 ---
-calico_chart_version: v3.32.2
-calico_chart_repo: https://docs.tigera.io/calico/charts
+calico_version: v3.32.2
+# GitHub release asset instead of the docs.tigera.io Helm repo: the latter is
+# throttled from some networks (observed on the test stand: ~0.4 KB/s).
+calico_release_url: "https://github.com/projectcalico/calico/releases/download/{{ calico_version }}"
+calico_crds_chart_url: "{{ calico_release_url }}/crd.projectcalico.org.v1-{{ calico_version }}.tgz"
+calico_chart_url: "{{ calico_release_url }}/tigera-operator-{{ calico_version }}.tgz"
 calico_namespace: tigera-operator
 calico_pod_cidr: "{{ k8s_pod_subnet }}"
 calico_kubeconfig: /etc/kubernetes/admin.conf

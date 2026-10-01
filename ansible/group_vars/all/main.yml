@@ -3,6 +3,9 @@
 
 k8s_cluster_name: mts-hack
 
+# Used by the kubernetes (packages) and kubeadm roles, which run in different plays.
+k8s_version: "1.36.5"
+
 # Must not overlap with the node network. Calico's default 192.168.0.0/16 often does.
 k8s_pod_subnet: 10.244.0.0/16
 k8s_service_subnet: 10.96.0.0/12

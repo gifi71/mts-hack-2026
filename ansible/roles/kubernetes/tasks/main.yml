@@ -15,11 +15,17 @@
     update_cache: true
     allow_change_held_packages: true
 
+- name: Install crictl
+  ansible.builtin.apt:
+    name: "cri-tools={{ kubernetes_cri_tools_version }}"
+    state: present
+    allow_change_held_packages: true
+
 - name: Hold Kubernetes package versions
   ansible.builtin.dpkg_selections:
     name: "{{ item }}"
     selection: hold
-  loop: "{{ kubernetes_packages }}"
+  loop: "{{ kubernetes_packages + ['cri-tools'] }}"
 
 - name: Enable kubelet
   ansible.builtin.systemd_service:

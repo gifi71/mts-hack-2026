@@ -1,11 +1,19 @@
 ---
 # Calico is installed by Ansible, not Argo CD: pods (Argo CD included) need a CNI first.
+# Since v3.31 the CRDs ship as a separate chart and must exist before the operator chart.
+- name: Install Calico CRDs
+  kubernetes.core.helm:
+    name: calico-crds
+    chart_ref: "{{ calico_crds_chart_url }}"
+    release_namespace: "{{ calico_namespace }}"
+    create_namespace: true
+    kubeconfig: "{{ calico_kubeconfig }}"
+    binary_path: /usr/local/bin/helm
+
 - name: Install Calico (tigera-operator)
   kubernetes.core.helm:
     name: calico
-    chart_ref: tigera-operator
-    chart_repo_url: "{{ calico_chart_repo }}"
-    chart_version: "{{ calico_chart_version }}"
+    chart_ref: "{{ calico_chart_url }}"
     release_namespace: "{{ calico_namespace }}"
     create_namespace: true
     release_values: "{{ calico_values }}"
