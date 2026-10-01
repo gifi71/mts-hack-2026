@@ -22,3 +22,10 @@ spec:
     automated:
       prune: true
       selfHeal: true
+    # A failed wave (e.g. a slow image pull) must not leave the tree half-synced.
+    retry:
+      limit: 20
+      backoff:
+        duration: 15s
+        factor: 2
+        maxDuration: 3m

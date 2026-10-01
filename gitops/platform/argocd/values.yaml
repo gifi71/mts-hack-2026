@@ -9,6 +9,10 @@ configs:
     server.insecure: true
   cm:
     timeout.reconciliation: 60s
+    # The chart ignores /status updates of every resource to save reconciliations.
+    # Then health stays frozen at sync time: CRDs never become Established, Gateways
+    # never Programmed, and sync waves stall. One small cluster can afford the updates.
+    resource.ignoreResourceUpdatesEnabled: "false"
     # Health of child Applications, so sync waves in the app of apps wait for
     # each layer (CRDs, operators, workloads) to become Healthy.
     resource.customizations.health.argoproj.io_Application: |
