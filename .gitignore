@@ -51,7 +51,6 @@ terraform.rc
 
 # --- Ansible ---
 *.retry
-ansible/inventory/local*
 ansible/.facts_cache/
 .ansible/
 collections/ansible_collections/

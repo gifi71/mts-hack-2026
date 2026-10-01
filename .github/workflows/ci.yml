@@ -117,34 +117,16 @@ jobs:
           sudo apt-get purge -y docker-ce docker-ce-cli docker-buildx-plugin docker-compose-plugin containerd.io || true
           sudo iptables -P FORWARD ACCEPT
 
-      - name: Inventory for the runner itself
-        run: |
-          cat > ansible/inventory/hosts.yml <<EOF
-          all:
-            children:
-              k8s_cluster:
-                vars:
-                  ansible_connection: local
-                  ansible_user: ${USER}
-                  ansible_python_interpreter: /usr/bin/python3
-                children:
-                  control_plane:
-                    hosts:
-                      ci-node: {}
-                  workers:
-                    hosts: {}
-          EOF
-
       - name: make deploy
-        run: make deploy INVENTORY=ansible/inventory/hosts.yml ANSIBLE_ARGS="-e gitops_revision=${{ github.sha }}"
+        run: make deploy INVENTORY=ansible/inventory/localhost.yml ANSIBLE_ARGS="-e gitops_revision=${{ github.sha }}"
 
       - name: make deploy again (idempotency)
         run: |
-          make deploy INVENTORY=ansible/inventory/hosts.yml ANSIBLE_ARGS="-e gitops_revision=${{ github.sha }}" | tee second-run.log
-          grep -E "^ci-node +: .* changed=0 .* failed=0" second-run.log
+          make deploy INVENTORY=ansible/inventory/localhost.yml ANSIBLE_ARGS="-e gitops_revision=${{ github.sha }}" | tee second-run.log
+          grep -E "^k8s-node +: .* changed=0 .* failed=0" second-run.log
 
       - name: make verify
-        run: make verify INVENTORY=ansible/inventory/hosts.yml
+        run: make verify INVENTORY=ansible/inventory/localhost.yml
 
       - name: Diagnostics
         if: failure()

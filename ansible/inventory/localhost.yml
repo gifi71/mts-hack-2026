@@ -1,0 +1,17 @@
+---
+# Run everything on the current machine (a fresh Ubuntu 24.04 VM):
+#   make deploy INVENTORY=ansible/inventory/localhost.yml
+# The user needs passwordless sudo. Also used by the e2e job in CI.
+all:
+  children:
+    k8s_cluster:
+      vars:
+        ansible_connection: local
+        ansible_user: "{{ lookup('ansible.builtin.env', 'USER') }}"
+        ansible_python_interpreter: /usr/bin/python3
+      children:
+        control_plane:
+          hosts:
+            k8s-node: {}
+        workers:
+          hosts: {}
