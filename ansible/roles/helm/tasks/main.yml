@@ -19,8 +19,11 @@
     remote_src: true
     creates: "{{ helm_install_dir }}/{{ helm_version }}/linux-amd64/helm"
 
+# force: replaces a Helm binary installed by other means (e.g. on CI runners),
+# the node must use the pinned version.
 - name: Link Helm binary
   ansible.builtin.file:
     src: "{{ helm_install_dir }}/{{ helm_version }}/linux-amd64/helm"
     dest: /usr/local/bin/helm
     state: link
+    force: true
