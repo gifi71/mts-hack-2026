@@ -63,18 +63,11 @@ verify: deps check-inventory ## Smoke tests: Gateway API routing, Prometheus tar
 
 .PHONY: credentials
 credentials: deps check-inventory ## Print Grafana and Argo CD admin passwords (generated at install)
-	@$(VENV)/bin/ansible -i $(INVENTORY) control_plane -b -o -m ansible.builtin.shell -a '\
-	  k="kubectl --kubeconfig /etc/kubernetes/admin.conf"; \
-	  echo "grafana: $$($$k -n monitoring get secret grafana-admin -o jsonpath={.data.admin-user} | base64 -d) / $$($$k -n monitoring get secret grafana-admin -o jsonpath={.data.admin-password} | base64 -d)"; \
-	  echo "argocd:  admin / $$($$k -n argocd get secret argocd-initial-admin-secret -o jsonpath={.data.password} | base64 -d)"' \
-	  | sed 's/.*(stdout) //; s/\\n/\n/g'
+	$(VENV)/bin/ansible-playbook -i $(INVENTORY) ansible/info.yml --tags credentials
 
 .PHONY: ca-cert
 ca-cert: deps check-inventory ## Save the local CA certificate to mts-hack-ca.crt (for curl --cacert / browser)
-	@$(VENV)/bin/ansible -i $(INVENTORY) control_plane -b -o -m ansible.builtin.shell -a '\
-	  kubectl --kubeconfig /etc/kubernetes/admin.conf -n cert-manager get secret mts-hack-ca -o jsonpath={.data.ca\.crt}' \
-	  | sed 's/.*(stdout) //' | base64 -d > mts-hack-ca.crt
-	@echo "Saved mts-hack-ca.crt"
+	$(VENV)/bin/ansible-playbook -i $(INVENTORY) ansible/info.yml --tags ca
 
 .PHONY: ssh
 ssh: deps check-inventory ## Open a shell on the node

@@ -1,0 +1,54 @@
+---
+# make credentials -> --tags credentials, make ca-cert -> --tags ca
+- name: Show access details
+  hosts: control_plane
+  become: true
+  gather_facts: false
+  vars:
+    info_kubeconfig: /etc/kubernetes/admin.conf
+    info_ca_dest: "{{ playbook_dir }}/../mts-hack-ca.crt"
+  tasks:
+    - name: Read Grafana admin secret
+      ansible.builtin.command: >-
+        kubectl --kubeconfig {{ info_kubeconfig }} -n monitoring get secret grafana-admin -o json
+      register: info_grafana
+      changed_when: false
+      no_log: true
+      tags: [credentials]
+
+    - name: Read Argo CD initial admin secret
+      ansible.builtin.command: >-
+        kubectl --kubeconfig {{ info_kubeconfig }} -n argocd get secret argocd-initial-admin-secret -o json
+      register: info_argocd
+      changed_when: false
+      no_log: true
+      tags: [credentials]
+
+    - name: Show credentials
+      ansible.builtin.debug:
+        msg:
+          - >-
+            Grafana  https://grafana.mts-hack.local:30443
+            {{ (info_grafana.stdout | from_json).data['admin-user'] | b64decode }} /
+            {{ (info_grafana.stdout | from_json).data['admin-password'] | b64decode }}
+          - >-
+            Argo CD  https://argocd.mts-hack.local:30443
+            admin / {{ (info_argocd.stdout | from_json).data.password | b64decode }}
+      tags: [credentials]
+
+    - name: Read the local CA certificate
+      ansible.builtin.command: >-
+        kubectl --kubeconfig {{ info_kubeconfig }} -n cert-manager get secret mts-hack-ca -o json
+      register: info_ca
+      changed_when: false
+      no_log: true
+      tags: [ca]
+
+    - name: Save the CA certificate on this machine
+      ansible.builtin.copy:
+        content: "{{ (info_ca.stdout | from_json).data['ca.crt'] | b64decode }}"
+        dest: "{{ info_ca_dest }}"
+        mode: "0644"
+      delegate_to: localhost
+      become: false
+      tags: [ca]
