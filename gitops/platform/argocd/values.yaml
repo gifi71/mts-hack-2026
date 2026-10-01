@@ -7,6 +7,9 @@ configs:
   params:
     # TLS is terminated by Envoy Gateway.
     server.insecure: true
+    # Diff through the API server, which knows CRD defaults (Gateway API fills
+    # group/kind/weight etc.). Client-side diff reported those as permanent drift.
+    controller.diff.server.side: true
   cm:
     timeout.reconciliation: 60s
     # The chart ignores /status updates of every resource to save reconciliations.
