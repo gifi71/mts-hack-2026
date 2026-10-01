@@ -5,7 +5,7 @@
 
 Kubernetes-кластер на **kubeadm** с нуля на Ubuntu 24.04 и платформа вокруг демо-приложения:
 публикация через **Gateway API** (Envoy Gateway), метрики в **Prometheus**, логи через **Fluentd** в Loki.
-Всё ставится двумя командами и проверяется третьей:
+Всё ставится одной командой и проверяется второй:
 
 ```bash
 make deploy    # Ansible: ОС → containerd → kubeadm → Calico → Argo CD → вся платформа через GitOps
