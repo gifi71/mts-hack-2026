@@ -8,5 +8,9 @@ kubeadm_cert_sans: []
 kubeadm_config_path: /etc/kubernetes/kubeadm-config.yaml
 kubeadm_admin_kubeconfig: /etc/kubernetes/admin.conf
 
+# systemd-resolved keeps the real upstream servers here; /etc/resolv.conf points to the stub.
+kubeadm_upstream_resolv_conf: /run/systemd/resolve/resolv.conf
+kubeadm_kubelet_resolv_conf: /etc/kubernetes/resolv.conf
+
 # Single node: no workers means workloads must run on the control plane.
 kubeadm_untaint_control_plane: "{{ groups['workers'] | default([]) | length == 0 }}"

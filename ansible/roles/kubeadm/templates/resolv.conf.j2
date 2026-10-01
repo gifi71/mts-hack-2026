@@ -1,0 +1,8 @@
+# {{ ansible_managed }}
+# Upstream resolvers only, no search domains. Link-local IPv6 servers (fe80::...%if)
+# are skipped: their zone index is meaningless inside a pod.
+{% for ns in kubeadm_upstream_resolv.content | b64decode | regex_findall('^nameserver[ \t]+([^ \t\n]+)', multiline=True) %}
+{% if '%' not in ns and not ns.lower().startswith('fe80:') %}
+nameserver {{ ns }}
+{% endif %}
+{% endfor %}

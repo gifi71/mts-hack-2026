@@ -1,4 +1,17 @@
 ---
+- name: Read upstream DNS servers
+  ansible.builtin.slurp:
+    src: "{{ kubeadm_upstream_resolv_conf }}"
+  register: kubeadm_upstream_resolv
+
+# Host search domains leak into every pod (ndots:5). A DHCP-provided domain with a
+# wildcard record then resolves external names like github.com to the wrong host.
+- name: Write resolv.conf for kubelet without search domains
+  ansible.builtin.template:
+    src: resolv.conf.j2
+    dest: "{{ kubeadm_kubelet_resolv_conf }}"
+    mode: "0644"
+
 - name: Write kubeadm config
   ansible.builtin.template:
     src: kubeadm-config.yaml.j2
@@ -10,6 +23,17 @@
     cmd: kubeadm init --config {{ kubeadm_config_path }} --skip-token-print
     creates: "{{ kubeadm_admin_kubeconfig }}"
   register: kubeadm_init
+
+# kubeadm writes this file only on init; keep existing nodes in line with the config.
+- name: Point kubelet at the resolv.conf without search domains
+  ansible.builtin.lineinfile:
+    path: /var/lib/kubelet/config.yaml
+    regexp: '^resolvConf:'
+    line: "resolvConf: {{ kubeadm_kubelet_resolv_conf }}"
+  notify: Restart kubelet
+
+- name: Apply kubelet changes
+  ansible.builtin.meta: flush_handlers
 
 - name: Wait for API server
   ansible.builtin.command: kubectl --kubeconfig {{ kubeadm_admin_kubeconfig }} get --raw=/readyz
