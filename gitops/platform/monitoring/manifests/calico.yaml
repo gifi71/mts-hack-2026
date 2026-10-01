@@ -1,14 +1,31 @@
 # Felix (Calico dataplane) metrics, enabled in the Calico install (prometheusMetricsEnabled).
-# calico-node runs on the host network and does not name the port, so scrape it by number.
+# calico-node does not declare port 9091 in its pod spec, so pod discovery finds no target.
+# A headless Service can point at the undeclared host-network port.
+apiVersion: v1
+kind: Service
+metadata:
+  name: calico-felix-metrics
+  namespace: calico-system
+  labels:
+    app.kubernetes.io/name: calico-felix-metrics
+spec:
+  clusterIP: None
+  selector:
+    k8s-app: calico-node
+  ports:
+    - name: metrics
+      port: 9091
+      targetPort: 9091
+---
 apiVersion: monitoring.coreos.com/v1
-kind: PodMonitor
+kind: ServiceMonitor
 metadata:
   name: calico-felix
   namespace: calico-system
 spec:
   selector:
     matchLabels:
-      k8s-app: calico-node
-  podMetricsEndpoints:
-    - portNumber: 9091
+      app.kubernetes.io/name: calico-felix-metrics
+  endpoints:
+    - port: metrics
       path: /metrics
