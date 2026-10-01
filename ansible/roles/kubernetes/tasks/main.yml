@@ -14,12 +14,15 @@
     state: present
     update_cache: true
     allow_change_held_packages: true
+    # The pinned version wins even if a newer kubectl is already installed.
+    allow_downgrade: true
 
 - name: Install crictl
   ansible.builtin.apt:
     name: "cri-tools={{ kubernetes_cri_tools_version }}"
     state: present
     allow_change_held_packages: true
+    allow_downgrade: true
 
 - name: Hold Kubernetes package versions
   ansible.builtin.dpkg_selections:

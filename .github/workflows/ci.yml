@@ -110,9 +110,11 @@ jobs:
       - uses: actions/checkout@v7
 
       # The runner ships Docker with Docker's containerd.io, which conflicts with
-      # Ubuntu's containerd package used by the solution.
-      - name: Remove Docker from the runner
+      # Ubuntu's containerd package used by the solution. man-db triggers make
+      # every apt install take minutes on hosted runners.
+      - name: Prepare the runner
         run: |
+          sudo rm -f /var/lib/man-db/auto-update
           sudo systemctl stop docker.socket docker containerd || true
           sudo apt-get purge -y docker-ce docker-ce-cli docker-buildx-plugin docker-compose-plugin containerd.io || true
           sudo iptables -P FORWARD ACCEPT
