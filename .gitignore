@@ -103,3 +103,6 @@ infra/tofu/**/.generated/
 
 # --- Local inventory for existing hosts ---
 ansible/inventory/hosts.yml
+
+# --- Passport build intermediate ---
+docs/passport/passport.html

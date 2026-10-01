@@ -1,0 +1,46 @@
+digraph arch {
+  graph [rankdir=TB, fontname="DejaVu Sans", fontsize=11, nodesep=0.35, ranksep=0.6, pad=0.2, bgcolor="white"];
+  node  [shape=box, style="rounded,filled", fontname="DejaVu Sans", fontsize=10, fillcolor="#f4f6f8", color="#5b6770"];
+  edge  [fontname="DejaVu Sans", fontsize=9, color="#5b6770"];
+
+  user [label="Пользователь\ncurl / браузер", shape=oval, fillcolor="#ffffff"];
+  git  [label="GitHub\ngifi71/mts-hack-2026", shape=cylinder, fillcolor="#ffffff"];
+
+  subgraph cluster_node {
+    label="ВМ Ubuntu 24.04 · Kubernetes 1.36.5 (kubeadm, 1 нода) · containerd · Calico";
+    style="rounded"; color="#9aa5ad"; fontsize=11;
+
+    subgraph cluster_edge { label="envoy-gateway-system"; style="dashed"; color="#c0c7cc";
+      envoy [label="Envoy proxy\nGateway \"edge\"\nNodePort 30080 / 30443", fillcolor="#dbeafe"];
+      egc   [label="Envoy Gateway\n(контроллер)"];
+    }
+    subgraph cluster_demo { label="demo (PSA restricted, NetworkPolicy)"; style="dashed"; color="#c0c7cc";
+      v1 [label="Angie v1 ×2", fillcolor="#dcfce7"];
+      v2 [label="Angie v2 ×1", fillcolor="#dcfce7"];
+    }
+    subgraph cluster_mon { label="monitoring"; style="dashed"; color="#c0c7cc";
+      prom    [label="Prometheus", fillcolor="#fee2e2"];
+      grafana [label="Grafana", fillcolor="#fee2e2"];
+    }
+    subgraph cluster_log { label="logging"; style="dashed"; color="#c0c7cc";
+      fluentd [label="Fluentd\nDaemonSet", fillcolor="#fef3c7"];
+      loki    [label="Loki", fillcolor="#fef3c7"];
+    }
+    argo [label="Argo CD\napp of apps", fillcolor="#ede9fe"];
+    cp   [label="control plane, kubelet,\nnode-exporter, kube-state-metrics"];
+    logs [label="/var/log/containers", shape=note, fillcolor="#ffffff"];
+  }
+
+  user -> envoy [label="HTTP / HTTPS"];
+  egc -> envoy [style=dotted, label="xDS"];
+  envoy -> v1 [label="HTTPRoute 90%"];
+  envoy -> v2 [label="10%, X-Canary, /v2"];
+  envoy -> grafana [label="HTTPS"];
+  prom -> v1 [style=dashed, label="scrape"];
+  prom -> envoy [style=dashed];
+  prom -> cp [style=dashed];
+  v1 -> logs [style=dotted]; v2 -> logs [style=dotted];
+  logs -> fluentd; fluentd -> loki;
+  grafana -> prom; grafana -> loki;
+  git -> argo [label="sync"];
+}

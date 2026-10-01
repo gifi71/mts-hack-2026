@@ -81,6 +81,12 @@ ssh: deps check-inventory ## Open a shell on the node
 	$(VENV)/bin/ansible -i $(INVENTORY) control_plane -m ansible.builtin.ping >/dev/null
 	@ssh $$($(VENV)/bin/ansible-inventory -i $(INVENTORY) --host $$($(VENV)/bin/ansible-inventory -i $(INVENTORY) --list | python3 -c 'import sys,json;print(json.load(sys.stdin)["control_plane"]["hosts"][0])') | python3 -c 'import sys,json;h=json.load(sys.stdin);print(h.get("ansible_ssh_common_args",""),"-i",h["ansible_ssh_private_key_file"],h["ansible_user"]+"@"+h["ansible_host"])')
 
+##@ Docs
+
+.PHONY: passport
+passport: ## Build docs/passport/Паспорт.pdf (needs pandoc, graphviz, chromium)
+	docs/passport/build.sh
+
 ##@ Quality
 
 KUSTOMIZE_DIRS := gitops/platform/gateway gitops/platform/monitoring/manifests gitops/workloads/demo-app
