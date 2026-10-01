@@ -83,7 +83,8 @@ jobs:
           skip-dirs: gitops/platform/envoy-gateway/charts
           severity: HIGH,CRITICAL
           format: table
-          exit-code: "0"
+          trivyignores: .trivyignore
+          exit-code: "1"
 
       - name: IaC misconfiguration scan (Trivy, SARIF)
         uses: aquasecurity/trivy-action@v0.36.0
@@ -91,6 +92,7 @@ jobs:
           scan-type: config
           scan-ref: .
           skip-dirs: gitops/platform/envoy-gateway/charts
+          trivyignores: .trivyignore
           format: sarif
           output: trivy-config.sarif
 
