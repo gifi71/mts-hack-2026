@@ -101,7 +101,7 @@ Ansible и коллекции `make deploy` ставит сам в `.venv`, их
 
 ```bash
 git clone https://github.com/gifi71/mts-hack-2026.git && cd mts-hack-2026
-make deploy INVENTORY=ansible/inventory/localhost.yml   # 10-15 минут, в основном скачивание образов
+make deploy INVENTORY=ansible/inventory/localhost.yml   # 15-20 минут, в основном скачивание образов
 make verify INVENTORY=ansible/inventory/localhost.yml
 ```
 
