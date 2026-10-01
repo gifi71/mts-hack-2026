@@ -4,7 +4,7 @@ kind: InitConfiguration
 localAPIEndpoint:
   advertiseAddress: {{ kubeadm_advertise_address }}
 nodeRegistration:
-  name: {{ inventory_hostname }}
+  name: {{ kubeadm_node_name }}
   criSocket: unix:///run/containerd/containerd.sock
 {% if kubeadm_untaint_control_plane %}
   taints: []
@@ -20,7 +20,7 @@ networking:
 apiServer:
   certSANs:
     - {{ kubeadm_advertise_address }}
-    - {{ inventory_hostname }}
+    - {{ kubeadm_node_name }}
 {% for san in kubeadm_cert_sans %}
     - {{ san }}
 {% endfor %}

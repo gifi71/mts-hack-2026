@@ -63,7 +63,7 @@
 - name: Read control plane taints
   ansible.builtin.command: >-
     kubectl --kubeconfig {{ kubeadm_admin_kubeconfig }}
-    get node {{ inventory_hostname }} -o jsonpath={.spec.taints[*].key}
+    get node {{ kubeadm_node_name }} -o jsonpath={.spec.taints[*].key}
   register: kubeadm_taints
   changed_when: false
   when: kubeadm_untaint_control_plane
@@ -72,7 +72,7 @@
 - name: Allow workloads on the control plane
   ansible.builtin.command: >-
     kubectl --kubeconfig {{ kubeadm_admin_kubeconfig }}
-    taint node {{ inventory_hostname }} node-role.kubernetes.io/control-plane:NoSchedule-
+    taint node {{ kubeadm_node_name }} node-role.kubernetes.io/control-plane:NoSchedule-
   when:
     - kubeadm_untaint_control_plane
     - "'node-role.kubernetes.io/control-plane' in kubeadm_taints.stdout"
