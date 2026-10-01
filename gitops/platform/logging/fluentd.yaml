@@ -8,6 +8,13 @@ image:
   repository: ghcr.io/gifi71/mts-hack-2026/fluentd
   tag: v1.19.3-loki1.3.0
 
+env:
+  # Lets the metadata filter watch only pods on its own node.
+  - name: K8S_NODE_NAME
+    valueFrom:
+      fieldRef:
+        fieldPath: spec.nodeName
+
 resources:
   requests: {cpu: 50m, memory: 128Mi}
   limits: {memory: 384Mi}
@@ -59,6 +66,9 @@ fileConfigs:
         skip_container_metadata true
         skip_namespace_metadata true
         skip_master_url true
+        # app.kubernetes.io/name -> app_kubernetes_io_name, addressable from the Loki labels.
+        de_dot true
+        de_slash true
       </filter>
 
       # Demo app access log is JSON: lift its fields (status, uri, request_time...) into the record.
@@ -118,7 +128,7 @@ fileConfigs:
           namespace $.kubernetes.namespace_name
           pod $.kubernetes.pod_name
           container $.kubernetes.container_name
-          app $.kubernetes.labels['app.kubernetes.io/name']
+          app $.kubernetes.labels.app_kubernetes_io_name
           stream $.stream
         </label>
         <buffer>
