@@ -1,0 +1,12 @@
+---
+# Cluster-wide settings shared by several roles.
+
+k8s_cluster_name: mts-hack
+
+# Must not overlap with the node network. Calico's default 192.168.0.0/16 often does.
+k8s_pod_subnet: 10.244.0.0/16
+k8s_service_subnet: 10.96.0.0/12
+
+# Argo CD syncs the platform from this repository.
+gitops_repo_url: https://github.com/gifi71/mts-hack-2026.git
+gitops_revision: main

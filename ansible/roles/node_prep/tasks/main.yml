@@ -1,0 +1,54 @@
+---
+- name: Check for cloud-init
+  ansible.builtin.stat:
+    path: /usr/bin/cloud-init
+  register: node_prep_cloud_init_bin
+
+# Freshly provisioned VMs run apt from cloud-init; wait so apt locks do not collide.
+- name: Wait for cloud-init to finish
+  ansible.builtin.command: cloud-init status --wait
+  register: node_prep_cloud_init
+  changed_when: false
+  failed_when: node_prep_cloud_init.rc not in [0, 2] # 2 = finished with recoverable errors
+  when: node_prep_cloud_init_bin.stat.exists
+
+- name: Check operating system
+  ansible.builtin.assert:
+    that:
+      - ansible_facts.distribution == "Ubuntu"
+      - ansible_facts.distribution_version is version("24.04", ">=")
+    fail_msg: "Supported OS: Ubuntu 24.04, found {{ ansible_facts.distribution }} {{ ansible_facts.distribution_version }}"
+    quiet: true
+
+- name: Install base packages
+  ansible.builtin.apt:
+    name: "{{ node_prep_packages }}"
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Disable swap now
+  ansible.builtin.command: swapoff -a
+  when: ansible_facts.swaptotal_mb > 0
+  changed_when: true
+
+- name: Disable swap on boot
+  ansible.builtin.replace:
+    path: /etc/fstab
+    regexp: '^([^#].*\sswap\s.*)$'
+    replace: '# \1'
+
+- name: Load kernel modules
+  community.general.modprobe:
+    name: "{{ item }}"
+    state: present
+    persistent: present
+  loop: "{{ node_prep_kernel_modules }}"
+
+- name: Set kernel parameters
+  ansible.posix.sysctl:
+    name: "{{ item.key }}"
+    value: "{{ item.value }}"
+    sysctl_file: /etc/sysctl.d/99-kubernetes.conf
+    reload: true
+  loop: "{{ node_prep_sysctl | dict2items }}"

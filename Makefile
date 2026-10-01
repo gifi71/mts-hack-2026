@@ -5,6 +5,12 @@ SHELL := /usr/bin/env bash
 TOFU     ?= tofu
 TOFU_DIR := infra/tofu/proxmox
 
+VENV      ?= .venv
+INVENTORY ?= $(firstword $(wildcard ansible/inventory/generated/proxmox.yml ansible/inventory/hosts.yml))
+ANSIBLE_ARGS ?=
+
+export ANSIBLE_CONFIG := ansible/ansible.cfg
+
 .PHONY: help
 help: ## Show available targets
 	@awk 'BEGIN {FS = ":.*##"} /^[a-zA-Z0-9_-]+:.*##/ {printf "  \033[36m%-16s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -30,6 +36,31 @@ infra-down: ## Destroy the VM
 .PHONY: infra-output
 infra-output: ## Print VM IP, inventory path and ssh command
 	$(TOFU) -chdir=$(TOFU_DIR) output
+
+##@ Deploy
+
+$(VENV)/.deps: requirements.txt ansible/requirements.yml
+	python3 -m venv $(VENV)
+	$(VENV)/bin/pip install -q --upgrade pip
+	$(VENV)/bin/pip install -q -r requirements.txt
+	$(VENV)/bin/ansible-galaxy collection install -r ansible/requirements.yml -p ansible/.ansible/collections
+	touch $@
+
+.PHONY: deps
+deps: $(VENV)/.deps ## Install pinned Ansible and collections into .venv
+
+.PHONY: check-inventory
+check-inventory:
+	@test -n "$(INVENTORY)" || { echo "No inventory: run 'make infra-up' or create ansible/inventory/hosts.yml"; exit 1; }
+
+.PHONY: deploy
+deploy: deps check-inventory ## Install Kubernetes and the platform (idempotent, safe to re-run)
+	$(VENV)/bin/ansible-playbook -i $(INVENTORY) ansible/site.yml $(ANSIBLE_ARGS)
+
+.PHONY: ssh
+ssh: deps check-inventory ## Open a shell on the node
+	$(VENV)/bin/ansible -i $(INVENTORY) control_plane -m ansible.builtin.ping >/dev/null
+	@ssh $$($(VENV)/bin/ansible-inventory -i $(INVENTORY) --host $$($(VENV)/bin/ansible-inventory -i $(INVENTORY) --list | python3 -c 'import sys,json;print(json.load(sys.stdin)["control_plane"]["hosts"][0])') | python3 -c 'import sys,json;h=json.load(sys.stdin);print(h.get("ansible_ssh_common_args",""),"-i",h["ansible_ssh_private_key_file"],h["ansible_user"]+"@"+h["ansible_host"])')
 
 ##@ Quality
 

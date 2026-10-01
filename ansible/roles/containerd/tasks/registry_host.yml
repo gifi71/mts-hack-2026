@@ -1,0 +1,12 @@
+---
+- name: Create hosts directory for {{ containerd_registry.key }}
+  ansible.builtin.file:
+    path: /etc/containerd/certs.d/{{ containerd_registry.key }}
+    state: directory
+    mode: "0755"
+
+- name: Write hosts.toml for {{ containerd_registry.key }}
+  ansible.builtin.template:
+    src: hosts.toml.j2
+    dest: /etc/containerd/certs.d/{{ containerd_registry.key }}/hosts.toml
+    mode: "0644"

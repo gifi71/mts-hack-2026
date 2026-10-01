@@ -1,0 +1,8 @@
+# {{ ansible_managed }}
+# Mirrors are tried in order, then the upstream server.
+server = "{{ containerd_registry.value.server }}"
+{% for mirror in containerd_registry.value.mirrors %}
+
+[host."{{ mirror }}"]
+  capabilities = ["pull", "resolve"]
+{% endfor %}

@@ -1,0 +1,61 @@
+---
+- name: Install containerd
+  ansible.builtin.apt:
+    name: "containerd={{ containerd_package_version }}"
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+    allow_change_held_packages: true
+
+- name: Hold containerd version
+  ansible.builtin.dpkg_selections:
+    name: containerd
+    selection: hold
+
+- name: Create config directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    mode: "0755"
+  loop:
+    - /etc/containerd
+    - /etc/containerd/certs.d
+
+# Start from the defaults of the installed version and change only what
+# Kubernetes needs, so the file stays valid across containerd upgrades.
+- name: Read default containerd config
+  ansible.builtin.command: containerd config default
+  register: containerd_default_config
+  changed_when: false
+  check_mode: false
+
+- name: Write containerd config
+  ansible.builtin.template:
+    src: config.toml.j2
+    dest: /etc/containerd/config.toml
+    mode: "0644"
+    validate: containerd --config %s config dump
+  notify: Restart containerd
+
+- name: Configure registry mirrors
+  ansible.builtin.include_tasks: registry_host.yml
+  loop: "{{ containerd_registry_hosts | dict2items }}"
+  loop_control:
+    loop_var: containerd_registry
+
+- name: Configure crictl
+  ansible.builtin.copy:
+    dest: /etc/crictl.yaml
+    mode: "0644"
+    content: |
+      runtime-endpoint: unix:///run/containerd/containerd.sock
+      image-endpoint: unix:///run/containerd/containerd.sock
+
+- name: Apply containerd config before kubelet starts
+  ansible.builtin.meta: flush_handlers
+
+- name: Enable containerd
+  ansible.builtin.systemd_service:
+    name: containerd
+    state: started
+    enabled: true

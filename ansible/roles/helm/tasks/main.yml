@@ -1,0 +1,26 @@
+---
+- name: Create Helm version directory
+  ansible.builtin.file:
+    path: "{{ helm_install_dir }}/{{ helm_version }}"
+    state: directory
+    mode: "0755"
+
+- name: Download Helm
+  ansible.builtin.get_url:
+    url: "https://get.helm.sh/helm-{{ helm_version }}-linux-amd64.tar.gz"
+    dest: "{{ helm_install_dir }}/{{ helm_version }}/helm.tar.gz"
+    checksum: "{{ helm_checksum }}"
+    mode: "0644"
+
+- name: Unpack Helm
+  ansible.builtin.unarchive:
+    src: "{{ helm_install_dir }}/{{ helm_version }}/helm.tar.gz"
+    dest: "{{ helm_install_dir }}/{{ helm_version }}"
+    remote_src: true
+    creates: "{{ helm_install_dir }}/{{ helm_version }}/linux-amd64/helm"
+
+- name: Link Helm binary
+  ansible.builtin.file:
+    src: "{{ helm_install_dir }}/{{ helm_version }}/linux-amd64/helm"
+    dest: /usr/local/bin/helm
+    state: link

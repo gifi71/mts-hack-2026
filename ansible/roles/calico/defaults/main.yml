@@ -1,0 +1,32 @@
+---
+calico_chart_version: v3.32.2
+calico_chart_repo: https://docs.tigera.io/calico/charts
+calico_namespace: tigera-operator
+calico_pod_cidr: "{{ k8s_pod_subnet }}"
+calico_kubeconfig: /etc/kubernetes/admin.conf
+
+# VXLAN without BGP: works on any L2/L3 network, including cloud VMs.
+# Optional components are off to save memory on a single node.
+calico_values:
+  installation:
+    enabled: true
+    cni:
+      type: Calico
+    calicoNetwork:
+      bgp: Disabled
+      ipPools:
+        - name: default-ipv4-ippool
+          cidr: "{{ calico_pod_cidr }}"
+          encapsulation: VXLAN
+          natOutgoing: Enabled
+          nodeSelector: all()
+          blockSize: 26
+  apiServer:
+    enabled: false
+  goldmane:
+    enabled: false
+  whisker:
+    enabled: false
+  defaultFelixConfiguration:
+    enabled: true
+    prometheusMetricsEnabled: true

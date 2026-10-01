@@ -1,0 +1,17 @@
+---
+# Use this when the VM was not created by OpenTofu:
+#   cp ansible/inventory/hosts.example.yml ansible/inventory/hosts.yml
+#   make deploy INVENTORY=ansible/inventory/hosts.yml
+all:
+  children:
+    k8s_cluster:
+      vars:
+        ansible_user: ubuntu
+        ansible_ssh_private_key_file: ~/.ssh/id_ed25519
+      children:
+        control_plane:
+          hosts:
+            k8s-node:
+              ansible_host: 192.0.2.10 # Ubuntu 24.04 VM address
+        workers:
+          hosts: {}

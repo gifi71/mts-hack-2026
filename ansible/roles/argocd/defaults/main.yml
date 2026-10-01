@@ -1,0 +1,17 @@
+---
+argocd_chart_version: 10.9.6
+argocd_chart_repo: https://argoproj.github.io/argo-helm
+argocd_namespace: argocd
+argocd_kubeconfig: /etc/kubernetes/admin.conf
+
+# Same values file Argo CD uses for itself, kept in the GitOps tree.
+argocd_values_file: "{{ playbook_dir }}/../gitops/platform/argocd/values.yaml"
+
+argocd_repo_url: "{{ gitops_repo_url }}"
+argocd_revision: "{{ gitops_revision }}"
+
+# Block until every Application is Synced and Healthy, so `make deploy`
+# finishes with a working platform rather than a half-synced one.
+argocd_wait_for_apps: true
+argocd_wait_retries: 90
+argocd_wait_delay: 10

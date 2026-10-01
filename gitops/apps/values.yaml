@@ -1,0 +1,3 @@
+# Overridden by the root Application created by Ansible (roles/argocd).
+repoURL: https://github.com/gifi71/mts-hack-2026.git
+targetRevision: main

@@ -1,0 +1,17 @@
+---
+- name: Prepare Kubernetes nodes
+  hosts: k8s_cluster
+  become: true
+  roles:
+    - node_prep
+    - containerd
+    - kubernetes
+
+- name: Bootstrap control plane and GitOps
+  hosts: control_plane
+  become: true
+  roles:
+    - helm
+    - kubeadm
+    - calico
+    - argocd

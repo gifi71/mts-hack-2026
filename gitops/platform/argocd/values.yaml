@@ -1,0 +1,60 @@
+# Argo CD Helm values. Used by Ansible for the initial install (roles/argocd).
+
+global:
+  domain: argocd.mts-hack.local
+
+configs:
+  params:
+    # TLS is terminated by Envoy Gateway.
+    server.insecure: true
+  cm:
+    timeout.reconciliation: 60s
+    # Health of child Applications, so sync waves in the app of apps wait for
+    # each layer (CRDs, operators, workloads) to become Healthy.
+    resource.customizations.health.argoproj.io_Application: |
+      hs = {}
+      hs.status = "Progressing"
+      hs.message = ""
+      if obj.status ~= nil and obj.status.health ~= nil then
+        hs.status = obj.status.health.status
+        if obj.status.health.message ~= nil then
+          hs.message = obj.status.health.message
+        end
+      end
+      return hs
+
+dex:
+  enabled: false
+
+notifications:
+  enabled: false
+
+applicationSet:
+  replicas: 0
+
+redis:
+  image:
+    # Chart default is ECR Public; Docker Hub goes through the containerd mirror.
+    repository: docker.io/library/redis
+    tag: 8.6.4-alpine
+
+controller:
+  metrics:
+    enabled: true
+  resources:
+    requests: {cpu: 100m, memory: 256Mi}
+    limits: {memory: 768Mi}
+
+server:
+  metrics:
+    enabled: true
+  resources:
+    requests: {cpu: 50m, memory: 64Mi}
+    limits: {memory: 256Mi}
+
+repoServer:
+  metrics:
+    enabled: true
+  resources:
+    requests: {cpu: 50m, memory: 128Mi}
+    limits: {memory: 512Mi}

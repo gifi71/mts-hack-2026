@@ -1,0 +1,10 @@
+---
+kubernetes_version: "1.36.5"
+kubernetes_package_revision: "1.1"
+kubernetes_minor: "{{ kubernetes_version.split('.')[:2] | join('.') }}"
+kubernetes_apt_url: "https://pkgs.k8s.io/core:/stable:/v{{ kubernetes_minor }}/deb/"
+
+kubernetes_packages:
+  - kubelet
+  - kubeadm
+  - kubectl

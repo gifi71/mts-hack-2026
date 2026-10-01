@@ -1,0 +1,56 @@
+---
+- name: Install Argo CD
+  kubernetes.core.helm:
+    name: argocd
+    chart_ref: argo-cd
+    chart_repo_url: "{{ argocd_chart_repo }}"
+    chart_version: "{{ argocd_chart_version }}"
+    release_namespace: "{{ argocd_namespace }}"
+    create_namespace: true
+    release_values: "{{ lookup('ansible.builtin.file', argocd_values_file) | from_yaml }}"
+    kubeconfig: "{{ argocd_kubeconfig }}"
+    binary_path: /usr/local/bin/helm
+    wait: true
+    wait_timeout: 10m
+
+- name: Create bootstrap directory
+  ansible.builtin.file:
+    path: /etc/kubernetes/gitops
+    state: directory
+    mode: "0700"
+
+- name: Render root Application
+  ansible.builtin.template:
+    src: root-app.yaml.j2
+    dest: /etc/kubernetes/gitops/root-app.yaml
+    mode: "0600"
+
+- name: Apply root Application
+  ansible.builtin.command: >-
+    kubectl --kubeconfig {{ argocd_kubeconfig }}
+    apply -f /etc/kubernetes/gitops/root-app.yaml
+  register: argocd_root_apply
+  changed_when: "'unchanged' not in argocd_root_apply.stdout"
+
+- name: Wait for all Applications to be Synced and Healthy
+  ansible.builtin.command: >-
+    kubectl --kubeconfig {{ argocd_kubeconfig }}
+    -n {{ argocd_namespace }} get applications.argoproj.io -o json
+  register: argocd_apps
+  changed_when: false
+  until: >-
+    (argocd_apps.stdout | from_json)['items'] | length > 1 and
+    (argocd_apps.stdout | from_json)['items']
+    | rejectattr('status.sync.status', 'defined') | list | length == 0 and
+    (argocd_apps.stdout | from_json)['items']
+    | selectattr('status.sync.status', 'ne', 'Synced') | list | length == 0 and
+    (argocd_apps.stdout | from_json)['items']
+    | selectattr('status.health.status', 'ne', 'Healthy') | list | length == 0
+  retries: "{{ argocd_wait_retries }}"
+  delay: "{{ argocd_wait_delay }}"
+  when: argocd_wait_for_apps
+
+- name: Show Application status
+  ansible.builtin.debug:
+    msg: "{{ (argocd_apps.stdout | from_json)['items'] | map(attribute='metadata.name') | list }}: Synced, Healthy"
+  when: argocd_wait_for_apps

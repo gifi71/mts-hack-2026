@@ -1,0 +1,15 @@
+---
+# Ubuntu noble-updates package. A wildcard on the upstream minor: superseded
+# Ubuntu builds disappear from the archive, an exact pin would break later installs.
+containerd_package_version: "2.2.*"
+
+# kubeadm 1.36 expects this sandbox image.
+containerd_pause_image: registry.k8s.io/pause:3.10.2
+
+# Pull-through mirrors per registry. mirror.gcr.io caches Docker Hub and keeps
+# installs working where Docker Hub is rate-limited or unreachable.
+containerd_registry_hosts:
+  docker.io:
+    server: https://registry-1.docker.io
+    mirrors:
+      - https://mirror.gcr.io

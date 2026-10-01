@@ -1,0 +1,5 @@
+# {{ ansible_managed }}
+# Generated from `containerd config default` with: systemd cgroup driver, pinned sandbox image.
+{{ containerd_default_config.stdout
+   | regex_replace('SystemdCgroup = false', 'SystemdCgroup = true')
+   | regex_replace("sandbox = '[^']*'", "sandbox = '" ~ containerd_pause_image ~ "'") }}

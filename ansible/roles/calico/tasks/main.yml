@@ -1,0 +1,27 @@
+---
+# Calico is installed by Ansible, not Argo CD: pods (Argo CD included) need a CNI first.
+- name: Install Calico (tigera-operator)
+  kubernetes.core.helm:
+    name: calico
+    chart_ref: tigera-operator
+    chart_repo_url: "{{ calico_chart_repo }}"
+    chart_version: "{{ calico_chart_version }}"
+    release_namespace: "{{ calico_namespace }}"
+    create_namespace: true
+    release_values: "{{ calico_values }}"
+    kubeconfig: "{{ calico_kubeconfig }}"
+    binary_path: /usr/local/bin/helm
+    wait: true
+    wait_timeout: 10m
+
+- name: Wait for node to become Ready
+  ansible.builtin.command: >-
+    kubectl --kubeconfig {{ calico_kubeconfig }}
+    wait --for=condition=Ready node --all --timeout=600s
+  changed_when: false
+
+- name: Wait for CoreDNS
+  ansible.builtin.command: >-
+    kubectl --kubeconfig {{ calico_kubeconfig }}
+    -n kube-system rollout status deployment/coredns --timeout=300s
+  changed_when: false
