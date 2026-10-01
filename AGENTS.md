@@ -35,13 +35,15 @@ infra/tofu/          OpenTofu: одна ВМ Ubuntu 24.04 на Proxmox, inventor
   templates/         cloud-init
   modules/           ansible-inventory (+ tofu test)
   proxmox/           root-модуль
-ansible/             подготовка хоста по SSH, kubeadm, CNI Calico, установка Argo CD
+ansible/             site.yml (развёртывание), verify.yml, info.yml; роли: узел, kubeadm, Calico, Argo CD
 gitops/
   bootstrap/         root Application (app-of-apps)
   apps/              только манифесты Argo CD Application, порядок через sync-wave
   platform/<comp>/   values и манифесты компонента: envoy-gateway, cert-manager, monitoring, logging, policies
   workloads/         демо-приложение (Kustomize base + overlays)
-tests/smoke/         проверки Gateway, метрик и логов
+tests/smoke/         verify.sh: проверки Gateway, метрик и логов (make verify)
+images/fluentd/      Dockerfile образа Fluentd с плагином Loki (собирается в CI)
+scripts/             вспомогательные скрипты (ssh-node.sh)
 docs/adr/            архитектурные решения, одно решение на файл
 docs/passport/       исходники паспорта решения
 .github/workflows/   CI
@@ -54,11 +56,19 @@ Makefile             единая точка входа, все команды �
 ## Команды
 
 ```bash
-make help                                  # список целей
-make tofu-check                            # fmt, validate, tofu test
-make infra-up                              # ВМ на Proxmox + inventory
-make infra-down
+make help                 # список целей
+make deploy               # Ansible + Argo CD, идемпотентно (INVENTORY=... для своего inventory)
+make verify               # smoke-тесты: Gateway API, Prometheus, Loki
+make credentials          # пароли Grafana и Argo CD
+make ca-cert              # локальный CA в mts-hack-ca.crt
+make ssh                  # shell на ноде
+make infra-up / infra-down   # ВМ на Proxmox (OpenTofu)
+make tofu-check           # fmt, validate, tofu test
+make manifests-check      # helm lint + kubeconform по всем отрендеренным манифестам
+make passport             # docs/passport/Паспорт.pdf
 ```
+
+Ansible-lint локально: `cd ansible && uvx --with ansible-core==2.21.4 ansible-lint --profile production site.yml verify.yml info.yml`.
 
 Добавил цель в Makefile: добавь к ней `## описание` и обнови этот список.
 
