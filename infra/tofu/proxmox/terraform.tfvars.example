@@ -1,0 +1,28 @@
+# Copy to terraform.tfvars (git-ignored) and adjust to your Proxmox.
+# Secrets are NOT set here: export PROXMOX_VE_ENDPOINT / PROXMOX_VE_API_TOKEN instead.
+
+pve_node           = "pve"
+vm_datastore       = "local-lvm"
+image_datastore    = "local" # needs "Import" content type
+snippets_datastore = "local" # needs "Snippets" content type
+vm_id              = 9100
+
+vm = {
+  cpu    = 4
+  memory = 8192
+  disk   = 30
+}
+
+network = {
+  bridge       = "vmbr0"
+  ipv4_address = "192.168.1.50/24"
+  gateway      = "192.168.1.1"
+  dns_servers  = ["192.168.1.1"]
+}
+
+ssh_public_key_path  = "~/.ssh/id_ed25519.pub"
+ssh_private_key_path = "~/.ssh/id_ed25519"
+
+# Set both when the VM network is reachable only through the Proxmox host.
+# pve_ssh_address = "192.168.0.5"
+# ssh_bastion     = "root@192.168.0.5"
