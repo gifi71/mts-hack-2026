@@ -1,0 +1,24 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: envoy-gateway
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  sources:
+    - repoURL: {{ .Values.repoURL }}
+      targetRevision: {{ .Values.targetRevision }}
+      path: gitops/platform/envoy-gateway/charts/gateway-helm
+      helm:
+        releaseName: envoy-gateway
+        valueFiles:
+          - $values/gitops/platform/envoy-gateway/values.yaml
+    {{- include "apps.valuesSource" . | nindent 4 }}
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: envoy-gateway-system
+  {{- include "apps.syncPolicy" . | nindent 2 }}

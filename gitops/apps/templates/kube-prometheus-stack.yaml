@@ -1,0 +1,25 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: kube-prometheus-stack
+  namespace: argocd
+  annotations:
+    # Early: its CRDs (ServiceMonitor, PodMonitor, PrometheusRule) are used by later apps.
+    argocd.argoproj.io/sync-wave: "-2"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  sources:
+    - repoURL: https://prometheus-community.github.io/helm-charts
+      chart: kube-prometheus-stack
+      targetRevision: 91.8.2
+      helm:
+        releaseName: kube-prometheus-stack
+        valueFiles:
+          - $values/gitops/platform/monitoring/kube-prometheus-stack.yaml
+    {{- include "apps.valuesSource" . | nindent 4 }}
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: monitoring
+  {{- include "apps.syncPolicy" . | nindent 2 }}

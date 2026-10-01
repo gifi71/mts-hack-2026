@@ -1,0 +1,54 @@
+# Private CA for *.mts-hack.local: self-signed root -> CA issuer -> wildcard certificate.
+# Export the CA for clients: make ca-cert
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: selfsigned
+spec:
+  selfSigned: {}
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: mts-hack-ca
+  namespace: cert-manager
+spec:
+  isCA: true
+  commonName: MTS Hack Local CA
+  secretName: mts-hack-ca
+  duration: 87600h # 10 years
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+  issuerRef:
+    group: cert-manager.io
+    kind: ClusterIssuer
+    name: selfsigned
+---
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: mts-hack-ca
+spec:
+  ca:
+    secretName: mts-hack-ca
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: mts-hack-tls
+  namespace: envoy-gateway-system
+spec:
+  secretName: mts-hack-tls
+  dnsNames:
+    - "*.mts-hack.local"
+  duration: 2160h # 90 days
+  renewBefore: 360h
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+    rotationPolicy: Always
+  issuerRef:
+    group: cert-manager.io
+    kind: ClusterIssuer
+    name: mts-hack-ca

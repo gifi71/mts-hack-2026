@@ -1,0 +1,24 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: fluentd
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  sources:
+    - repoURL: https://fluent.github.io/helm-charts
+      chart: fluentd
+      targetRevision: 0.6.0
+      helm:
+        releaseName: fluentd
+        valueFiles:
+          - $values/gitops/platform/logging/fluentd.yaml
+    {{- include "apps.valuesSource" . | nindent 4 }}
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: logging
+  {{- include "apps.syncPolicy" . | nindent 2 }}

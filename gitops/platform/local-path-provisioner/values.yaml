@@ -1,0 +1,13 @@
+# Node-local volumes for Prometheus and Loki on the single node.
+storageClass:
+  defaultClass: true
+  name: local-path
+  reclaimPolicy: Delete
+
+helperImage:
+  repository: docker.io/library/busybox
+  tag: "1.37.0" # chart default is "latest"
+
+resources:
+  requests: {cpu: 10m, memory: 32Mi}
+  limits: {memory: 128Mi}

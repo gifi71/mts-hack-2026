@@ -1,0 +1,28 @@
+{{- /* Plain-manifest components, rendered with Kustomize from this repository. */}}
+{{- $apps := list
+  (dict "name" "gateway" "path" "gitops/platform/gateway" "namespace" "envoy-gateway-system" "wave" "0")
+  (dict "name" "monitoring-config" "path" "gitops/platform/monitoring/manifests" "namespace" "monitoring" "wave" "0")
+  (dict "name" "demo-app" "path" "gitops/workloads/demo-app" "namespace" "demo" "wave" "1")
+}}
+{{- range $apps }}
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: {{ .name }}
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: {{ .wave | quote }}
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: {{ $.Values.repoURL }}
+    targetRevision: {{ $.Values.targetRevision }}
+    path: {{ .path }}
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: {{ .namespace }}
+  {{- include "apps.syncPolicy" $ | nindent 2 }}
+{{- end }}

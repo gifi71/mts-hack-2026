@@ -1,0 +1,133 @@
+# Fluentd DaemonSet: tails container logs on the node, adds Kubernetes metadata,
+# parses the demo app's JSON access log and ships everything to Loki.
+
+kind: DaemonSet
+
+image:
+  # images/fluentd: upstream daemonset image + fluent-plugin-grafana-loki, built in CI.
+  repository: ghcr.io/gifi71/mts-hack-2026/fluentd
+  tag: v1.19.3-loki1.3.0
+
+resources:
+  requests: {cpu: 50m, memory: 128Mi}
+  limits: {memory: 384Mi}
+
+# containerd writes logs under /var/log/pods; /var/lib/docker is not used.
+mountVarLogDirectory: true
+mountDockerContainersDirectory: false
+
+metrics:
+  serviceMonitor:
+    enabled: true
+    additionalLabels: {}
+
+fileConfigs:
+  01_sources.conf: |-
+    <source>
+      @type tail
+      @id in_tail_container_logs
+      @label @KUBERNETES
+      path /var/log/containers/*.log
+      # Fluentd's own output would loop back into the pipeline.
+      exclude_path ["/var/log/containers/fluentd-*_logging_*.log"]
+      pos_file /var/log/fluentd-containers.log.pos
+      tag kubernetes.*
+      read_from_head true
+      follow_inodes true
+      <parse>
+        @type cri
+      </parse>
+    </source>
+
+    <source>
+      @type prometheus
+      bind 0.0.0.0
+      port 24231
+      metrics_path /metrics
+    </source>
+
+    <source>
+      @type prometheus_output_monitor
+    </source>
+
+  02_filters.conf: |-
+    <label @KUBERNETES>
+      <filter kubernetes.**>
+        @type kubernetes_metadata
+        @id filter_kube_metadata
+        skip_labels false
+        skip_container_metadata true
+        skip_namespace_metadata true
+        skip_master_url true
+      </filter>
+
+      # Demo app access log is JSON: lift its fields (status, uri, request_time...) into the record.
+      <filter kubernetes.var.log.containers.**_demo_angie-**>
+        @type parser
+        @id filter_demo_json
+        key_name message
+        reserve_data true
+        emit_invalid_record_to_error false
+        <parse>
+          @type json
+          keep_time_key true
+          time_key time
+          time_type string
+          time_format %Y-%m-%dT%H:%M:%S%z
+        </parse>
+      </filter>
+
+      <match **>
+        @type relabel
+        @label @DISPATCH
+      </match>
+    </label>
+
+  03_dispatch.conf: |-
+    <label @DISPATCH>
+      <filter **>
+        @type prometheus
+        <metric>
+          name fluentd_input_status_num_records_total
+          type counter
+          desc The total number of incoming records
+          <labels>
+            tag ${tag}
+            hostname ${hostname}
+          </labels>
+        </metric>
+      </filter>
+
+      <match **>
+        @type relabel
+        @label @OUTPUT
+      </match>
+    </label>
+
+  04_outputs.conf: |-
+    <label @OUTPUT>
+      <match **>
+        @type loki
+        @id out_loki
+        url "http://loki.logging.svc:3100"
+        extra_labels {"cluster":"mts-hack","collector":"fluentd"}
+        line_format json
+        # Kubernetes metadata becomes Loki labels below; keep the log line small.
+        remove_keys ["kubernetes", "docker"]
+        <label>
+          namespace $.kubernetes.namespace_name
+          pod $.kubernetes.pod_name
+          container $.kubernetes.container_name
+          app $.kubernetes.labels['app.kubernetes.io/name']
+          stream $.stream
+        </label>
+        <buffer>
+          @type file
+          path /var/log/fluentd-buffers/loki
+          flush_interval 5s
+          flush_at_shutdown true
+          chunk_limit_size 1m
+          retry_max_interval 30s
+        </buffer>
+      </match>
+    </label>
