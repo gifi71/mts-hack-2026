@@ -1,0 +1,80 @@
+# app.mts-hack.local on both listeners (HTTP :30080 and HTTPS :30443):
+#   X-Canary: always  -> v2 (header match)
+#   /v2/...           -> v2, prefix stripped (path match + rewrite)
+#   everything else   -> v1 90% / v2 10% (traffic splitting)
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: demo
+spec:
+  parentRefs:
+    - name: edge
+      namespace: envoy-gateway-system
+  hostnames:
+    - app.mts-hack.local
+  rules:
+    - matches:
+        - headers:
+            - name: X-Canary
+              value: always
+      backendRefs:
+        - name: angie-v2
+          port: 80
+      filters:
+        - type: ResponseHeaderModifier
+          responseHeaderModifier:
+            add:
+              - name: X-Served-By
+                value: envoy-gateway
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /v2
+      filters:
+        - type: URLRewrite
+          urlRewrite:
+            path:
+              type: ReplacePrefixMatch
+              replacePrefixMatch: /
+        - type: ResponseHeaderModifier
+          responseHeaderModifier:
+            add:
+              - name: X-Served-By
+                value: envoy-gateway
+      backendRefs:
+        - name: angie-v2
+          port: 80
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      timeouts:
+        request: 5s
+      filters:
+        - type: ResponseHeaderModifier
+          responseHeaderModifier:
+            add:
+              - name: X-Served-By
+                value: envoy-gateway
+      backendRefs:
+        - name: angie-v1
+          port: 80
+          weight: 90
+        - name: angie-v2
+          port: 80
+          weight: 10
+---
+# No hostname: lets `curl http://<node>:30080/` reach the app without a Host header.
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: demo-default
+spec:
+  parentRefs:
+    - name: edge
+      namespace: envoy-gateway-system
+      sectionName: http
+  rules:
+    - backendRefs:
+        - name: angie-v1
+          port: 80

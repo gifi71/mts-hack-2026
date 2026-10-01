@@ -1,0 +1,83 @@
+# Base Deployment; kustomization.yaml creates the v1 and v2 variants from it.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: angie
+spec:
+  replicas: 2
+  revisionHistoryLimit: 3
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: angie
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: angie
+        app.kubernetes.io/part-of: demo
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 100 # "angie" user in the image
+        runAsGroup: 101
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: angie
+          image: docker.angie.software/angie:1.12.2-minimal@sha256:b14d3f8f7ab7e39d7c028e87a7bac9dc6484bab1c9610a3c925f1adb1d11b77e
+          ports:
+            - name: http
+              containerPort: 8080
+            - name: metrics
+              containerPort: 9113
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            periodSeconds: 10
+            failureThreshold: 3
+          resources:
+            requests: {cpu: 10m, memory: 16Mi}
+            limits: {memory: 64Mi}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ALL]
+          volumeMounts:
+            - name: config
+              mountPath: /etc/angie/angie.conf
+              subPath: angie.conf
+              readOnly: true
+            - name: version
+              mountPath: /etc/angie/version
+              readOnly: true
+            - name: tmp
+              mountPath: /tmp
+            - name: logs
+              mountPath: /var/log/angie
+            - name: cache
+              mountPath: /var/cache/angie
+      volumes:
+        - name: config
+          configMap:
+            name: angie-config
+        - name: version
+          configMap:
+            name: angie-version
+        - name: tmp
+          emptyDir: {sizeLimit: 16Mi}
+        - name: logs
+          emptyDir: {sizeLimit: 16Mi}
+        - name: cache
+          emptyDir: {sizeLimit: 16Mi}

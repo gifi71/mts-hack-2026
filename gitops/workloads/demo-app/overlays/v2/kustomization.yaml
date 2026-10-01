@@ -1,0 +1,17 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - ../../base
+nameSuffix: -v2
+labels:
+  - pairs:
+      app.kubernetes.io/version: v2
+    includeSelectors: true
+    includeTemplates: true
+configMapGenerator:
+  - name: angie-version
+    files:
+      - version.conf
+replicas:
+  - name: angie
+    count: 1
