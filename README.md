@@ -259,7 +259,13 @@ LogQL для Grafana: `{namespace="demo", app="angie"} | json | status >= 400`.
   - получает SBOM и SLSA provenance;
   - подписывается cosign (keyless).
 
-  Базовые образы и Angie закреплены по digest.
+  Базовые образы и Angie закреплены по digest. Проверить подпись:
+
+  ```bash
+  cosign verify ghcr.io/gifi71/mts-hack-2026/fluentd:v1.19.3-loki1.3.0 \
+    --certificate-identity-regexp '^https://github.com/gifi71/mts-hack-2026/.github/workflows/image-fluentd.yml@refs/heads/main$' \
+    --certificate-oidc-issuer https://token.actions.githubusercontent.com
+  ```
 - **Устойчивость к блокировкам реестров**: containerd тянет образы Docker Hub через зеркало `mirror.gcr.io`, чарт Envoy Gateway завендорен, Calico ставится из GitHub Releases.
 - **Надёжность приложения**: 3 реплики, readiness и liveness probes, PodDisruptionBudget, rolling update без простоя.
 - **Наблюдаемость платформы**: метрики control plane, Argo CD, cert-manager, Fluentd, Calico.
