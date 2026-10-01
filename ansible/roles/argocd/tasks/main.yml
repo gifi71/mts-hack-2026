@@ -8,10 +8,13 @@
     release_namespace: "{{ argocd_namespace }}"
     create_namespace: true
     release_values: "{{ lookup('ansible.builtin.file', argocd_values_file) | from_yaml }}"
-    kubeconfig: "{{ argocd_kubeconfig }}"
     binary_path: /usr/local/bin/helm
     wait: true
     wait_timeout: 10m
+  # Not the kubeconfig option: its action plugin reads that path on the controller,
+  # which fails with connection: local (file is root-only).
+  environment:
+    KUBECONFIG: "{{ argocd_kubeconfig }}"
 
 - name: Create bootstrap directory
   ansible.builtin.file:

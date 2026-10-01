@@ -7,8 +7,11 @@
     chart_ref: "{{ calico_crds_chart_url }}"
     release_namespace: "{{ calico_namespace }}"
     create_namespace: true
-    kubeconfig: "{{ calico_kubeconfig }}"
     binary_path: /usr/local/bin/helm
+  # Not the kubeconfig option: its action plugin reads that path on the controller,
+  # which fails with connection: local (file is root-only).
+  environment:
+    KUBECONFIG: "{{ calico_kubeconfig }}"
 
 - name: Install Calico (tigera-operator)
   kubernetes.core.helm:
@@ -17,10 +20,13 @@
     release_namespace: "{{ calico_namespace }}"
     create_namespace: true
     release_values: "{{ calico_values }}"
-    kubeconfig: "{{ calico_kubeconfig }}"
     binary_path: /usr/local/bin/helm
     wait: true
     wait_timeout: 10m
+  # Not the kubeconfig option: its action plugin reads that path on the controller,
+  # which fails with connection: local (file is root-only).
+  environment:
+    KUBECONFIG: "{{ calico_kubeconfig }}"
 
 - name: Wait for node to become Ready
   ansible.builtin.command: >-
