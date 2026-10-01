@@ -1,0 +1,26 @@
+extends: default
+
+ignore: |
+  gitops/platform/envoy-gateway/charts/
+  gitops/apps/templates/
+  .ansible/
+  ansible/.ansible/
+  .venv/
+  .serena/
+  .omc/
+  .claude/
+
+rules:
+  line-length:
+    max: 160
+  document-start: disable
+  truthy:
+    allowed-values: ["true", "false", "on"]
+  comments:
+    min-spaces-from-content: 1
+  comments-indentation: disable
+  braces:
+    max-spaces-inside: 1
+  octal-values:
+    forbid-implicit-octal: true
+    forbid-explicit-octal: true

@@ -68,6 +68,17 @@ ssh: deps check-inventory ## Open a shell on the node
 
 ##@ Quality
 
+KUSTOMIZE_DIRS := gitops/platform/gateway gitops/platform/monitoring/manifests gitops/workloads/demo-app
+CRD_SCHEMAS := https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json
+
+.PHONY: manifests-check
+manifests-check: ## Render the app of apps and kustomize trees, validate with kubeconform
+	helm lint gitops/apps
+	helm template root gitops/apps | kubeconform -strict -summary -schema-location default -schema-location '$(CRD_SCHEMAS)'
+	for d in $(KUSTOMIZE_DIRS); do \
+	  kubectl kustomize $$d | kubeconform -strict -summary -schema-location default -schema-location '$(CRD_SCHEMAS)' -skip EnvoyProxy || exit 1; \
+	done
+
 .PHONY: tofu-check
 tofu-check: ## fmt check, validate and unit tests for OpenTofu code
 	$(TOFU) fmt -recursive -check infra/tofu

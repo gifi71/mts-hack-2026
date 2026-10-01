@@ -1,0 +1,156 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    name: lint and validate
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+
+      - name: Install linters
+        run: pip install -r requirements.txt ansible-lint==26.9.0 yamllint==1.38.0
+
+      - name: yamllint
+        run: yamllint --strict .
+
+      - name: ansible-lint (production profile)
+        working-directory: ansible
+        run: |
+          ansible-galaxy collection install -r requirements.yml -p .ansible/collections
+          ansible-lint --profile production site.yml verify.yml
+
+      - name: shellcheck
+        run: shellcheck tests/smoke/*.sh
+
+      - uses: opentofu/setup-opentofu@v2
+        with:
+          tofu_version: 1.12.6
+          tofu_wrapper: false
+
+      - name: OpenTofu fmt, validate, test
+        run: make tofu-check
+
+      - uses: azure/setup-helm@v5
+        with:
+          version: v3.22.0
+
+      - name: Install kubeconform
+        run: |
+          curl -fsSL https://github.com/yannh/kubeconform/releases/download/v0.8.0/kubeconform-linux-amd64.tar.gz \
+            | sudo tar -xz -C /usr/local/bin kubeconform
+
+      - name: Render and validate Kubernetes manifests
+        run: make manifests-check
+
+  security:
+    name: security scans
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Secret scan (gitleaks)
+        uses: gitleaks/gitleaks-action@v3
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: IaC misconfiguration scan (Trivy, table)
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          scan-type: config
+          scan-ref: .
+          skip-dirs: gitops/platform/envoy-gateway/charts
+          severity: HIGH,CRITICAL
+          format: table
+          exit-code: "0"
+
+      - name: IaC misconfiguration scan (Trivy, SARIF)
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          scan-type: config
+          scan-ref: .
+          skip-dirs: gitops/platform/envoy-gateway/charts
+          format: sarif
+          output: trivy-config.sarif
+
+      - name: Upload Trivy results
+        if: always() && github.event_name != 'pull_request'
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: trivy-config.sarif
+          category: trivy-config
+
+  e2e:
+    name: e2e on a clean Ubuntu 24.04 (kubeadm)
+    needs: lint
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v7
+
+      # The runner ships Docker with Docker's containerd.io, which conflicts with
+      # Ubuntu's containerd package used by the solution.
+      - name: Remove Docker from the runner
+        run: |
+          sudo systemctl stop docker.socket docker containerd || true
+          sudo apt-get purge -y docker-ce docker-ce-cli docker-buildx-plugin docker-compose-plugin containerd.io || true
+          sudo iptables -P FORWARD ACCEPT
+
+      - name: Inventory for the runner itself
+        run: |
+          cat > ansible/inventory/hosts.yml <<EOF
+          all:
+            children:
+              k8s_cluster:
+                vars:
+                  ansible_connection: local
+                  ansible_user: ${USER}
+                  ansible_python_interpreter: /usr/bin/python3
+                children:
+                  control_plane:
+                    hosts:
+                      ci-node: {}
+                  workers:
+                    hosts: {}
+          EOF
+
+      - name: make deploy
+        run: make deploy INVENTORY=ansible/inventory/hosts.yml ANSIBLE_ARGS="-e gitops_revision=${{ github.sha }}"
+
+      - name: make deploy again (idempotency)
+        run: |
+          make deploy INVENTORY=ansible/inventory/hosts.yml ANSIBLE_ARGS="-e gitops_revision=${{ github.sha }}" | tee second-run.log
+          grep -E "^ci-node +: .* changed=0 .* failed=0" second-run.log
+
+      - name: make verify
+        run: make verify INVENTORY=ansible/inventory/hosts.yml
+
+      - name: Diagnostics
+        if: failure()
+        run: |
+          export KUBECONFIG=/etc/kubernetes/admin.conf
+          sudo -E kubectl get nodes -o wide || true
+          sudo -E kubectl get pods -A -o wide || true
+          sudo -E kubectl -n argocd get applications -o wide || true
+          sudo -E kubectl get events -A --sort-by=.lastTimestamp | tail -60 || true
