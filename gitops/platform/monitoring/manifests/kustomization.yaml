@@ -3,3 +3,14 @@ kind: Kustomization
 resources:
   - envoy.yaml
   - argocd.yaml
+  - rules.yaml
+  - calico.yaml
+generatorOptions:
+  disableNameSuffixHash: true
+  labels:
+    grafana_dashboard: "1"
+configMapGenerator:
+  - name: mts-hack-dashboards
+    namespace: monitoring
+    files:
+      - dashboards/mts-hack-overview.json

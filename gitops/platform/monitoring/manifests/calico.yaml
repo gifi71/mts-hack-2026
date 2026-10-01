@@ -1,0 +1,14 @@
+# Felix (Calico dataplane) metrics, enabled in the Calico install (prometheusMetricsEnabled).
+# calico-node runs on the host network and does not name the port, so scrape it by number.
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: calico-felix
+  namespace: calico-system
+spec:
+  selector:
+    matchLabels:
+      k8s-app: calico-node
+  podMetricsEndpoints:
+    - portNumber: 9091
+      path: /metrics
