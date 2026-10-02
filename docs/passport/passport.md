@@ -63,4 +63,5 @@
   - rate limiting на Gateway для защиты от всплесков (Envoy ratelimit + Redis);
   - SLO-алерты по burn rate для сервисов с SLA;
   - мульти-кластер по площадкам (Argo CD ApplicationSet).
+- **Kubernetes 1.37** и containerd 2.3 LTS, когда Argo CD, cert-manager и Envoy Gateway добавят 1.37 в свои матрицы (на 2 октября её поддерживает только Calico 3.33). У containerd 2.2 upstream-поддержка заканчивается 6 ноября 2026.
 - **VictoriaLogs** вместо Loki при больших объёмах логов.

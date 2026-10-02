@@ -17,7 +17,7 @@ make verify    # smoke-тесты: Gateway API, Prometheus, логи в Loki
 ## Содержание
 
 - [Архитектура](#архитектура)
-- [Версии](#версии)
+- [Версии](#версии) и [совместимость](#совместимость)
 - [Требования](#требования)
 - [Развёртывание](#развёртывание)
 - [Проверка](#проверка): [приложение и Gateway API](#приложение-и-gateway-api), [мониторинг](#мониторинг), [логи](#логирование)
@@ -81,6 +81,28 @@ flowchart LR
 | OpenTofu | ≥ 1.8 (проверено на 1.12.6), провайдер bpg/proxmox 0.114.0 | опционально |
 
 Все версии зафиксированы: пакеты, чарты, образы (Angie и база Fluentd по digest), коллекции Ansible, провайдеры OpenTofu.
+
+### Совместимость
+
+Версия Kubernetes выбрана как последняя минорная, которую официально поддерживают все компоненты.
+Сверено с матрицами проектов на 2 октября 2026.
+
+| Компонент | Версия | Поддерживаемые Kubernetes | 1.37 |
+|---|---|---|---|
+| Calico | 3.32.2 | 1.34, 1.35, 1.36 ([requirements](https://docs.tigera.io/calico/3.32/getting-started/kubernetes/requirements)) | с Calico 3.33 |
+| Argo CD | 3.5.3 | 1.33, 1.34, 1.35, 1.36 ([tested versions](https://argo-cd.readthedocs.io/en/stable/operator-manual/tested-kubernetes-versions/)) | нет |
+| cert-manager | 1.21.2 | 1.33, 1.34, 1.35, 1.36 ([releases](https://cert-manager.io/docs/releases/)) | нет |
+| Envoy Gateway | 1.9.2, Gateway API 1.6.1 | 1.33, 1.34, 1.35, 1.36 ([matrix](https://gateway.envoyproxy.io/news/releases/matrix/)) | нет |
+| kube-state-metrics | 2.20.0 | client-go 1.36 ([matrix](https://github.com/kubernetes/kube-state-metrics#compatibility-matrix)) | нет |
+| containerd | 2.2.1 (Ubuntu 24.04) | 1.36 требует 2.2+ ([RELEASES.md](https://github.com/containerd/containerd/blob/main/RELEASES.md#kubernetes-support)) | нужен 2.3+ |
+
+Поэтому **Kubernetes 1.36.5**, хотя уже вышла 1.37.1. Сознательно не обновлены:
+
+- Calico 3.33.0: вышел 1 октября, первый релиз ветки, для 1.36 ничего не добавляет;
+- Gateway API 1.6.2: Envoy Gateway 1.9.2 поставляется и тестируется с 1.6.1;
+- Fluentd 1.19.4: для него ещё нет образа `fluent/fluentd-kubernetes-daemonset`, на котором построен наш образ.
+
+Версия Kubernetes задаётся одной переменной `k8s_version` в [ansible/group_vars/all/main.yml](ansible/group_vars/all/main.yml).
 
 ## Требования
 
