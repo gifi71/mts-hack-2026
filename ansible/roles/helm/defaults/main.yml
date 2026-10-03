@@ -3,3 +3,5 @@
 helm_version: v3.22.0
 helm_checksum: sha256:1e4ab49e429626cf6c6958d914248b78c9730803c2751b87627e171dc800e7bb
 helm_install_dir: /opt/helm
+# Override to download from a mirror; the checksum above is still enforced.
+helm_download_url: "https://get.helm.sh/helm-{{ helm_version }}-linux-amd64.tar.gz"

@@ -7,7 +7,7 @@
 
 - name: Download Helm
   ansible.builtin.get_url:
-    url: "https://get.helm.sh/helm-{{ helm_version }}-linux-amd64.tar.gz"
+    url: "{{ helm_download_url }}"
     dest: "{{ helm_install_dir }}/{{ helm_version }}/helm.tar.gz"
     checksum: "{{ helm_checksum }}"
     mode: "0644"

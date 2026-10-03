@@ -414,7 +414,11 @@ docs/task/            текст кейса и ответы организато
 - **State OpenTofu** хранится локально.
 - **Нужен интернет** на узле: пакеты, образы, чарты и этот репозиторий для Argo CD. Организаторы на Q&A подтвердили,
   что у проверяющих он есть ([docs/task/qa-2026-10-02.md](docs/task/qa-2026-10-02.md)). Из некоторых российских сетей
-  без VPN недоступны Docker Hub, `get.helm.sh`, `registry.k8s.io`, `ghcr.io`; зеркало настроено только для `docker.io`.
+  без VPN недоступны Docker Hub, `get.helm.sh`, `registry.k8s.io`, `ghcr.io`, `mirror.gcr.io` и чарты на `*.github.io`.
+  По умолчанию зеркало настроено только для `docker.io`. Свои зеркала реестров и адрес Helm задаются файлом
+  [ansible/mirrors.example.yml](ansible/mirrors.example.yml): `make deploy ANSIBLE_ARGS="-e @ansible/mirrors.yml"`.
+  Helm-чарты (`*.github.io`, `charts.jetstack.io`, релизы Calico на `github.com`) и сам репозиторий качаются напрямую,
+  для них нужен прокси или VPN.
 - **Argo CD берёт код из GitHub**, а не из локальной копии: локальные правки в `gitops/` в кластер не попадут.
 - **Только amd64**: бинарник Helm и образ Fluentd собраны под amd64.
 - **IP узла постоянный**: он зашит в сертификаты kubeadm.

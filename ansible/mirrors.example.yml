@@ -1,0 +1,35 @@
+# Overrides for a network where the default registries or get.helm.sh are unreachable.
+# Copy, replace the mirror URLs with your own and pass the file to any playbook target:
+#   cp ansible/mirrors.example.yml ansible/mirrors.yml
+#   make deploy ANSIBLE_ARGS="-e @ansible/mirrors.yml"
+#
+# containerd tries the mirrors in order, then the registry itself. The dict replaces the
+# default one (roles/containerd/defaults), so keep docker.io in it. List only mirrors that
+# work: with an unreachable mirror the fallback worked for registry.k8s.io, but blob
+# downloads from quay.io stalled (containerd 2.2, tested 2026-10-03). Drop the entries
+# you do not need.
+containerd_registry_hosts:
+  docker.io: # Envoy, Grafana, Loki, local-path-provisioner, Redis for Argo CD
+    server: https://registry-1.docker.io
+    mirrors:
+      - https://mirror.gcr.io
+      - https://docker-mirror.example.internal
+  registry.k8s.io: # kubeadm control plane images, pause
+    server: https://registry.k8s.io
+    mirrors:
+      - https://k8s-mirror.example.internal
+  ghcr.io: # Fluentd image of this repository, kube-webhook-certgen
+    server: https://ghcr.io
+    mirrors:
+      - https://ghcr-mirror.example.internal
+  quay.io: # Calico, Argo CD, cert-manager, Prometheus components
+    server: https://quay.io
+    mirrors:
+      - https://quay-mirror.example.internal
+  docker.angie.software: # demo application
+    server: https://docker.angie.software
+    mirrors:
+      - https://angie-mirror.example.internal
+
+# Any URL that serves the same tarball; the sha256 in roles/helm/defaults is still checked.
+helm_download_url: https://files.example.internal/helm/helm-v3.22.0-linux-amd64.tar.gz
