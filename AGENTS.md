@@ -40,10 +40,11 @@ ansible/             site.yml (развёртывание), verify.yml, info.yml
 gitops/
   apps/              Helm-чарт app-of-apps: Argo CD Application на компонент, порядок через sync-wave.
                      Root Application создаёт Ansible (roles/argocd/templates/root-app.yaml.j2)
-  platform/<comp>/   values и манифесты компонента: argocd, envoy-gateway, gateway, cert-manager, monitoring,
-                     logging, local-path-provisioner
+  platform/<comp>/   values и манифесты компонента: argocd, envoy-gateway, gateway, cert-manager, monitoring
+                     (и SLO в monitoring/slo), logging, kyverno (политики в kyverno/policies), local-path-provisioner
   workloads/         демо-приложение (Kustomize base + overlays)
-tests/smoke/         verify.sh: проверки Gateway, метрик и логов (make verify)
+tests/smoke/         verify.sh: проверки Gateway, метрик, SLO, Kyverno и логов (make verify)
+tests/cis/           kube-bench.sh: CIS Kubernetes Benchmark (e2e, make cis)
 images/fluentd/      Dockerfile образа Fluentd с плагином Loki (собирается в CI)
 scripts/             вспомогательные скрипты (ssh-node.sh, ansible-lint.sh для pre-commit)
 docs/adr/            архитектурные решения, одно решение на файл
@@ -61,7 +62,8 @@ Makefile             единая точка входа, все команды �
 ```bash
 make help                 # список целей
 make deploy               # Ansible + Argo CD, идемпотентно (INVENTORY=... для своего inventory)
-make verify               # smoke-тесты: Gateway API, Prometheus, Loki
+make verify               # smoke-тесты: Gateway API, Prometheus, SLO, Kyverno, Loki
+make cis                  # CIS Kubernetes Benchmark на ноде (kube-bench)
 make credentials          # пароли Grafana и Argo CD
 make ca-cert              # локальный CA в mts-hack-ca.crt
 make ssh                  # shell на ноде
@@ -73,9 +75,12 @@ make submission SURNAME=…  # dist/<SURNAME>.zip: Ссылка.txt + Паспо
 make lock                 # пересобрать ansible/requirements.txt (uv, хеши) после правки requirements.in
 make hooks                # поставить git-хуки pre-commit
 make lint                 # все хуки pre-commit по всем файлам (то же, что CI lint)
+make slo                  # SLO-правила из спецификации Sloth (monitoring/slo -> manifests/slo-rules.yaml)
+make kubescape            # Kubescape (NSA, MITRE) по отрендеренным манифестам
 ```
 
 Python-зависимости: правишь только `ansible/requirements.in`, потом `make lock`. `requirements.txt` руками не редактировать.
+SLO: правишь только `gitops/platform/monitoring/slo/demo-app.yaml`, потом `make slo`. `slo-rules.yaml` сгенерирован.
 
 `ANSIBLE_ARGS` передаётся во все цели с плейбуками: `-K` (пароль sudo), `-e gitops_revision=<ветка>` и т.п.
 

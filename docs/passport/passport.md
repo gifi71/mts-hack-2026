@@ -38,10 +38,10 @@
 |---|---|---|---|
 | Расширенный Gateway API | HTTPS (cert-manager, свой CA), редирект HTTP→HTTPS, маршруты по hostname, path, заголовку, `URLRewrite`, split 90/10, таймауты, заголовки ответа | показать возможности Gateway API из ТЗ | `make verify`: HTTPS, `X-Canary`, `/v2`, split |
 | GitOps | Argo CD, app of apps, sync-waves, self-heal, server-side diff | изменения только через git, дрейф исправляется сам | `argocd.mts-hack.local:30443` |
-| CI/CD | `ci`: lint (yamllint, ansible-lint production, shellcheck, tofu test, kubeconform), e2e kubeadm на чистой Ubuntu 24.04; `security`: gitleaks, Trivy IaC и образа с гейтом на HIGH/CRITICAL, еженедельный рескан | проверяет воспроизводимость, идемпотентность и безопасность на каждом коммите | Actions → `ci`, `security`; вкладка Security |
+| CI/CD | `ci`: pre-commit-хуки (yamllint, ansible-lint production, shellcheck, hadolint, actionlint), tofu test, kubeconform, e2e kubeadm на чистой Ubuntu 24.04 с CIS Benchmark (kube-bench); `security`: gitleaks, Trivy IaC и образа, Kubescape (NSA, MITRE) с гейтом на HIGH; OpenSSF Scorecard | проверяет воспроизводимость, идемпотентность и безопасность на каждом коммите; те же хуки локально (`make hooks`) | Actions → `ci`, `security`, `scorecard`; вкладка Security |
 | Цепочка поставки | свой образ Fluentd: патчи Debian из snapshot на фиксированную дату, Trivy до публикации, SBOM, SLSA provenance, подпись cosign; образ и его база по digest | образ собираем сами, значит отвечаем за его происхождение и уязвимости | `cosign verify` (команда в README) |
-| Безопасность в кластере | PSA `restricted`, non-root, read-only FS, NetworkPolicy default-deny, секреты генерируются при установке | минимальные права приложения | `kubectl -n demo get netpol`, `kubectl get ns demo --show-labels` |
-| Расширенная наблюдаемость | дашборды Grafana как код (свой, Argo CD, Envoy Gateway), алерты (доступность, 5xx, p95, ошибки доставки логов; видны в UI, канал уведомлений не настроен), метрики control plane, структурированные логи, 404/500 в приложении | RPS, коды, latency, CPU/RAM и логи в одном месте | Grafana → «MTS Hack: gateway, app, logs» |
+| Безопасность в кластере | Kyverno: образы репозитория только с подписью cosign из CI (Deny), Audit-политики с PolicyReport; control plane по CIS (audit log, без profiling), 4 принятых исключения; PSA `restricted`, non-root, read-only FS, NetworkPolicy default-deny, секреты генерируются при установке | подпись проверяется при admission, а не только ставится; базовая линия CIS и NSA вместо самодельных правил | `make verify`: неподписанный образ отклонён; `make cis`; `kubectl get policyreport -A` |
+| Расширенная наблюдаемость | SLO как код (Sloth): доступность и latency 99%, multi-window burn-rate алерты; дашборды Grafana как код (свой, SLO, Argo CD, Envoy Gateway), алерты (доступность, 5xx, p95, ошибки доставки логов; видны в UI, канал уведомлений не настроен), метрики control plane, структурированные логи, 404/500 в приложении | RPS, коды, latency, CPU/RAM и логи в одном месте | Grafana → «MTS Hack: gateway, app, logs» |
 | Меньше внешних зависимостей | зеркало `mirror.gcr.io` для `docker.io` в containerd, завендоренный чарт Envoy Gateway, Calico из GitHub Releases, resolv.conf без чужих search-доменов | Docker Hub и часть реестров нестабильны из РФ | `cat /etc/containerd/certs.d/docker.io/hosts.toml` |
 | Провижининг ВМ | OpenTofu: ВМ на Proxmox, cloud-init, inventory, закреплённый host key | цикл «с нуля» одной командой | `make infra-up` |
 
@@ -57,11 +57,11 @@
 - **LoadBalancer** через MetalLB (BGP с маршрутизаторами оператора) или внешний балансировщик вместо NodePort. Нужен доступ к сетевому оборудованию.
 - **Внешнее хранилище:** S3-совместимое для Loki и Thanos/VictoriaMetrics для долгого хранения метрик. Нужно объектное хранилище.
 - **Аутентификация на Gateway** через SecurityPolicy Envoy Gateway и OIDC (Keycloak). Нужен IdP.
-- **Политики admission** (Kyverno): запрет образов без подписи cosign, обязательные лимиты.
+- **Kyverno в Enforce** для гигиены workload и проверка подписей сторонних образов (у кого upstream их публикует).
 - **Телеком-специфика:**
   - GRPCRoute и TLSRoute для внутренних сервисов;
   - rate limiting на Gateway для защиты от всплесков (Envoy ratelimit + Redis);
-  - SLO-алерты по burn rate для сервисов с SLA;
+  - SLO для каждого сервиса с SLA и маршрутизация алертов в дежурство;
   - мульти-кластер по площадкам (Argo CD ApplicationSet).
 - **Kubernetes 1.37** и containerd 2.3 LTS, когда Argo CD, cert-manager и Envoy Gateway добавят 1.37 в свои матрицы (на 2 октября её поддерживает только Calico 3.33). У containerd 2.2 upstream-поддержка заканчивается 6 ноября 2026.
 - **VictoriaLogs** вместо Loki при больших объёмах логов.
