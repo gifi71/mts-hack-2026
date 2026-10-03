@@ -16,7 +16,7 @@ make deploy    # Ansible: ОС → containerd → kubeadm → Calico → Argo CD
 make verify    # smoke-тесты: Gateway API, Prometheus, логи в Loki
 ```
 
-Повторный `make deploy` ничего не меняет (`changed=0`). CI проверяет это на каждом коммите: поднимает кластер на чистом раннере `ubuntu-24.04` (10-15 минут), повторяет развёртывание и запускает `make verify`.
+Повторный `make deploy` ничего не меняет (`changed=0`). CI проверяет это на каждом коммите с кодом: поднимает кластер на чистом раннере `ubuntu-24.04` (10-15 минут), повторяет развёртывание и запускает `make verify`.
 
 ## Содержание
 
@@ -484,13 +484,20 @@ TODO.md               что осталось сделать
   слои, которых в нём нет, он перенаправляет на тот же CDN Docker Hub. Поэтому настройка containerd не помогает,
   даже если указать `mirror.gcr.io` единственным хостом для `docker.io`. В такой сети нужно своё зеркало, которое
   отдаёт слои само (Harbor или `registry:2` в режиме proxy за VPN), и его адрес в `mirrors.yml`.
+- **HTTPS только по именам `*.mts-hack.local`**: сертификат и слушатель HTTPS выпущены на эти имена, поэтому
+  `https://<IP>:30443` без имени не откроется (нет SNI). HTTP `http://<IP>:30080/` работает и по IP.
+- **Какие реестры нужны компонентам**: `registry.k8s.io` (control plane, pause, kube-state-metrics),
+  `quay.io` (Calico, Argo CD, cert-manager, Prometheus), `docker.io` через `mirror.gcr.io` (Envoy, Envoy Gateway,
+  Grafana, Loki, local-path-provisioner, Redis для Argo CD), `ghcr.io` (Fluentd этого репозитория, Kyverno, kube-webhook-certgen),
+  `docker.angie.software` (приложение), `github.com` (этот репозиторий для Argo CD). Зеркала: `ansible/mirrors.example.yml`.
 - **Argo CD берёт код из GitHub**, а не из локальной копии: локальные правки в `gitops/` в кластер не попадут.
 - **Только amd64**: бинарник Helm и образ Fluentd собраны под amd64.
 - **IP узла постоянный**: он зашит в сертификаты kubeadm.
 - **Метрики control plane на всех интерфейсах узла**: etcd (`:2381`) и kube-proxy (`:10249`) отдают метрики по HTTP
   без аутентификации. Для стенда допустимо, в проде их закрывают firewall или ставят прокси с mTLS.
 - **Kyverno пропускает поды, если сам недоступен** (`failurePolicy: Ignore`): на одной ноде иначе его падение или
-  недоступный Sigstore блокировали бы все новые поды. Неверная подпись при этом отклоняется.
+  недоступный Sigstore блокировали бы все новые поды. Неверная подпись отклоняется, когда Sigstore доступен;
+  без него поды с образами этого репозитория создаются без проверки (с задержкой до 20 с на таймаут webhook).
 - **CIS: 4 принятых исключения.** etcd под root (так ставит kubeadm), нет serving-сертификатов kubelet от CA кластера,
   controller-manager и scheduler слушают IP узла ради метрик. Бенчмарк `cis-1.12` рассчитан на Kubernetes 1.32-1.34,
   отдельного для 1.36 в kube-bench пока нет.

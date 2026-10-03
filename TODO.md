@@ -4,8 +4,8 @@
 
 ## До сдачи (2026-10-04 23:59 МСК)
 
-- [ ] Чистый прогон на новой ВМ: `make infra-down infra-up deploy verify cis`. Флаги CIS в конфиге kubeadm
-      применяются только при `kubeadm init`, на уже поднятом кластере их не проверить.
+- [x] Чистый прогон на новой ВМ (2026-10-03): `make infra-down infra-up deploy verify cis`, verify и kube-bench
+      без FAIL. Флаги CIS в конфиге kubeadm применяются только при `kubeadm init`, поэтому прогон был с нуля.
 - [ ] Проверка из браузера, как это сделает проверяющий (около 10 минут, с машины в сети стенда):
   - [ ] `hosts`: `<IP узла> app.mts-hack.local grafana.mts-hack.local prometheus.mts-hack.local argocd.mts-hack.local`;
   - [ ] `make credentials`, `make ca-cert`, импорт CA (или принять предупреждение браузера);
