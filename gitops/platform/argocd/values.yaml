@@ -48,9 +48,11 @@ redis:
 controller:
   metrics:
     enabled: true
+  # The controller caches every managed object, CRDs included. Kyverno's CRDs carry large
+  # schemas; with 768Mi the controller was OOMKilled while filling the cache on start.
   resources:
-    requests: {cpu: 100m, memory: 256Mi}
-    limits: {memory: 768Mi}
+    requests: {cpu: 100m, memory: 512Mi}
+    limits: {memory: 1536Mi}
 
 server:
   metrics:
