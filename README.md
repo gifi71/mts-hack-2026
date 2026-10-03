@@ -362,6 +362,9 @@ LogQL для Grafana (Explore → Loki):
 - **Меньше зависимости от Docker Hub**: containerd тянет образы `docker.io` (Envoy, Grafana, Loki и др.) сначала через зеркало `mirror.gcr.io`, чарт Envoy Gateway завендорен, Calico ставится из GitHub Releases.
 - **Надёжность приложения**: 3 реплики, readiness и liveness probes, PodDisruptionBudget, rolling update без простоя.
 - **Наблюдаемость платформы**: метрики control plane, Argo CD, cert-manager, Fluentd, Calico.
+  Дашборды лежат в [gitops/platform/monitoring/manifests/dashboards](gitops/platform/monitoring/manifests/dashboards), Grafana подхватывает их из ConfigMap:
+  свой «MTS Hack: gateway, app, logs», официальные ArgoCD, Envoy Gateway Global, Envoy Global, Envoy Clusters,
+  плюс стандартные дашборды kube-prometheus-stack (кластер, ноды, поды).
 
 ## CI/CD
 

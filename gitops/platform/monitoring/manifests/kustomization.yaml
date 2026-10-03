@@ -14,3 +14,16 @@ configMapGenerator:
     namespace: monitoring
     files:
       - dashboards/mts-hack-overview.json
+  # Upstream dashboards, copied unchanged from the pinned releases (Argo CD v3.5.3
+  # examples/, Envoy Gateway v1.9.2 gateway-addons-helm) except one hardcoded
+  # datasource uid replaced with $datasource.
+  - name: argocd-dashboards
+    namespace: monitoring
+    files:
+      - dashboards/argocd.json
+  - name: envoy-gateway-dashboards
+    namespace: monitoring
+    files:
+      - dashboards/envoy-gateway-global.json
+      - dashboards/envoy-proxy-global.json
+      - dashboards/envoy-clusters.json
