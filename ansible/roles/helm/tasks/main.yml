@@ -11,6 +11,12 @@
     dest: "{{ helm_install_dir }}/{{ helm_version }}/helm.tar.gz"
     checksum: "{{ helm_checksum }}"
     mode: "0644"
+  # Downloads from GitHub and chart repos fail now and then (503); retry instead of
+  # failing the whole run.
+  register: helm_download
+  retries: 3
+  delay: 15
+  until: helm_download is succeeded
 
 - name: Unpack Helm
   ansible.builtin.unarchive:

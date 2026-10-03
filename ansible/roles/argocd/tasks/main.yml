@@ -15,6 +15,12 @@
   # which fails with connection: local (file is root-only).
   environment:
     KUBECONFIG: "{{ argocd_kubeconfig }}"
+  # Downloads from GitHub and chart repos fail now and then (503); retry instead of
+  # failing the whole run.
+  register: argocd_release
+  retries: 3
+  delay: 15
+  until: argocd_release is succeeded
 
 - name: Create bootstrap directory
   ansible.builtin.file:

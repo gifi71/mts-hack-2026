@@ -12,6 +12,12 @@
   # which fails with connection: local (file is root-only).
   environment:
     KUBECONFIG: "{{ calico_kubeconfig }}"
+  # Downloads from GitHub and chart repos fail now and then (503); retry instead of
+  # failing the whole run.
+  register: calico_crds_release
+  retries: 3
+  delay: 15
+  until: calico_crds_release is succeeded
 
 - name: Install Calico (tigera-operator)
   kubernetes.core.helm:
@@ -27,6 +33,10 @@
   # which fails with connection: local (file is root-only).
   environment:
     KUBECONFIG: "{{ calico_kubeconfig }}"
+  register: calico_release
+  retries: 3
+  delay: 15
+  until: calico_release is succeeded
 
 - name: Wait for node to become Ready
   ansible.builtin.command: >-
