@@ -111,7 +111,7 @@ hooks: ## Install the git pre-commit hooks (needs pre-commit and tofu on PATH)
 lint: ## Run every pre-commit check on all files, the same set as the CI lint job
 	$(PRE_COMMIT) run --all-files
 
-KUSTOMIZE_DIRS := gitops/platform/gateway gitops/platform/monitoring/manifests gitops/workloads/demo-app
+KUSTOMIZE_DIRS := gitops/platform/gateway gitops/platform/monitoring/manifests gitops/platform/kyverno/policies gitops/workloads/demo-app
 CRD_SCHEMAS := https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json
 
 .PHONY: manifests-check

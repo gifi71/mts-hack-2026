@@ -1,0 +1,34 @@
+# Kyverno admission controller. The policies live in gitops/platform/kyverno/policies
+# (separate Application, synced after Kyverno is Healthy).
+
+global:
+  image:
+    # The same images as reg.kyverno.io. ghcr.io is already required for the Fluentd image,
+    # so Kyverno adds no new registry.
+    registry: ghcr.io
+
+admissionController:
+  replicas: 1
+  serviceMonitor:
+    enabled: true
+
+backgroundController:
+  serviceMonitor:
+    enabled: true
+
+reportsController:
+  serviceMonitor:
+    enabled: true
+  # The default 128Mi is tight once every pod in the cluster has a policy report.
+  resources:
+    requests: {cpu: 50m, memory: 64Mi}
+    limits: {memory: 256Mi}
+
+# No cleanup policies here.
+cleanupController:
+  enabled: false
+
+# Kyverno dashboard, picked up by the Grafana sidecar like the other dashboards.
+grafana:
+  enabled: true
+  namespace: monitoring

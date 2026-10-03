@@ -2,6 +2,7 @@
 {{- $apps := list
   (dict "name" "gateway" "path" "gitops/platform/gateway" "namespace" "envoy-gateway-system" "wave" "0")
   (dict "name" "monitoring-config" "path" "gitops/platform/monitoring/manifests" "namespace" "monitoring" "wave" "0")
+  (dict "name" "kyverno-policies" "path" "gitops/platform/kyverno/policies" "namespace" "kyverno" "wave" "0")
   (dict "name" "demo-app" "path" "gitops/workloads/demo-app" "namespace" "demo" "wave" "1")
 }}
 {{- range $apps }}
