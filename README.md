@@ -123,7 +123,7 @@ Kyverno 1.19.1 официально заявляет Kubernetes 1.33-1.35, ве�
 
 ## Требования
 
-**Проверено на**: Ubuntu 24.04.5 LTS (cloud image, ВМ на Proxmox, 4 vCPU, 8 ГБ RAM, 30 ГБ диска) и раннер
+**Проверено на**: Ubuntu 24.04.5 LTS (cloud image, чистая ВМ на Proxmox, 4 vCPU, 8 ГБ RAM, 30 ГБ диска, 2026-10-03) и раннер
 GitHub Actions `ubuntu-24.04` (каждый коммит, job `e2e`).
 
 **Узел кластера**: одна ВМ **Ubuntu 24.04** amd64, 4 vCPU, 8 ГБ RAM, 30 ГБ свободного места на `/`, доступ в интернет,
@@ -393,7 +393,7 @@ LogQL для Grafana (Explore → Loki):
     PolicyReport по каждому поду кластера: `kubectl get policyreport -A`;
   - **CIS Kubernetes Benchmark**: control plane настроен по CIS (profiling выключен, audit log API server с политикой
     [audit-policy.yaml](ansible/roles/kubeadm/files/audit-policy.yaml), права 600 на файлы kubelet). kube-bench проверяет
-    узел в e2e и через `make cis`: 73 PASS и 0 FAIL, 4 принятых исключения с причинами в [tests/cis/kube-bench.sh](tests/cis/kube-bench.sh);
+    узел в e2e и через `make cis`: 0 FAIL, 4 принятых исключения с причинами в [tests/cis/kube-bench.sh](tests/cis/kube-bench.sh);
   - **Kubescape**: наши манифесты проверяются по NSA hardening guide и MITRE ATT&CK (`make kubescape`), CI падает на находках
     HIGH и CRITICAL. На момент сдачи находок нет ни одной, обе оценки 100%.
 - **Цепочка поставки**: свой образ Fluentd собирается в CI ([images/fluentd](images/fluentd/Dockerfile)):
