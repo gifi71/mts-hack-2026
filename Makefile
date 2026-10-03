@@ -118,6 +118,21 @@ manifests-check: ## Render the app of apps and kustomize trees, validate with ku
 	  kubectl kustomize $$d | kubeconform -strict -summary -schema-location default -schema-location '$(CRD_SCHEMAS)' -skip EnvoyProxy || exit 1; \
 	done
 
+RENDER_DIR := .rendered
+KUBESCAPE ?= kubescape
+KUBESCAPE_ARGS ?=
+
+.PHONY: render
+render: ## Render the Kustomize trees into .rendered/ (input for scanners)
+	rm -rf $(RENDER_DIR) && mkdir -p $(RENDER_DIR)
+	for d in $(KUSTOMIZE_DIRS); do \
+	  kubectl kustomize $$d > $(RENDER_DIR)/$$(echo $$d | tr / _).yaml || exit 1; \
+	done
+
+.PHONY: kubescape
+kubescape: render ## Kubescape NSA and MITRE ATT&CK frameworks over the rendered manifests
+	$(KUBESCAPE) scan framework nsa,mitre $(RENDER_DIR) $(KUBESCAPE_ARGS)
+
 .PHONY: tofu-check
 tofu-check: ## fmt check, validate and unit tests for OpenTofu code
 	$(TOFU) fmt -recursive -check infra/tofu

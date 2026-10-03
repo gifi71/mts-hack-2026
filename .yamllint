@@ -9,6 +9,7 @@ ignore: |
   .serena/
   .omc/
   .claude/
+  .rendered/
 
 rules:
   line-length:

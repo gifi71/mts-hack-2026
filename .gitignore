@@ -87,6 +87,7 @@ sbom*.json
 trivy-*.json
 *.sarif
 *.log
+.rendered/
 
 # --- Editors / OS ---
 .idea/

@@ -68,6 +68,38 @@ jobs:
           format: table
           exit-code: "1"
 
+  kubescape:
+    name: Kubernetes posture (Kubescape NSA, MITRE)
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      security-events: write
+    env:
+      KUBESCAPE_VERSION: 4.0.15
+      KUBESCAPE_SHA256: 011569dbcde85afc96cf63262e4f967166b6680fd70a623e9065334b6767b244
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Install Kubescape
+        run: |
+          curl -fsSLo kubescape "https://github.com/kubescape/kubescape/releases/download/v${KUBESCAPE_VERSION}/kubescape_${KUBESCAPE_VERSION}_linux_amd64"
+          echo "${KUBESCAPE_SHA256}  kubescape" | sha256sum -c -
+          sudo install -m 0755 kubescape /usr/local/bin/kubescape
+
+      # Our own manifests (app, Gateway API, monitoring), rendered by Kustomize.
+      - name: Kubescape (SARIF)
+        run: make kubescape KUBESCAPE_ARGS="--format sarif --output kubescape.sarif"
+
+      - name: Upload to the Security tab
+        if: always() && github.event_name != 'pull_request'
+        uses: github/codeql-action/upload-sarif@2892aa5e19bbd11bc0cff5427e3b750a04d9e3c2 # v4
+        with:
+          sarif_file: kubescape.sarif
+          category: kubescape
+
+      - name: Kubescape gate (HIGH, CRITICAL)
+        run: make kubescape KUBESCAPE_ARGS="--severity-threshold high"
+
   image:
     name: deployed Fluentd image (cosign, Trivy)
     runs-on: ubuntu-24.04
