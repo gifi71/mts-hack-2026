@@ -21,9 +21,10 @@
 
 ## Последствия
 
-- Если Docker Hub недоступен, образы `docker.io` приходят из `mirror.gcr.io`. Если недоступно и зеркало,
-  установка не пройдёт: зеркал для `registry.k8s.io` и `ghcr.io` нет.
+- Если Docker Hub недоступен, образы `docker.io` приходят из `mirror.gcr.io`. Зеркала остальных реестров
+  (`registry.k8s.io`, `ghcr.io`, `quay.io`, `docker.angie.software`) и адрес загрузки Helm задаются файлом
+  `ansible/mirrors.example.yml` через `-e @file`; по умолчанию их нет.
 - По Q&A организаторов у проверяющих интернет есть ([docs/task/qa-2026-10-02.md](../task/qa-2026-10-02.md)).
   Из некоторых российских сетей без VPN недоступны Docker Hub, `get.helm.sh`, `registry.k8s.io`, `ghcr.io`.
-  Следующий шаг: переменные для зеркал всех реестров и прокси для containerd, apt и Argo CD.
+  Не сделано: прокси (`HTTPS_PROXY`) для containerd, apt и Argo CD и вендоринг чартов с `*.github.io`.
 - При обновлении Envoy Gateway чарт нужно перевендорить (`helm pull ... --untar`).

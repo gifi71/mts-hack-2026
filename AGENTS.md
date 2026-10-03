@@ -61,6 +61,7 @@ Makefile             единая точка входа, все команды �
 
 ```bash
 make help                 # список целей
+make deps                 # .venv с Ansible и коллекциями (остальные цели вызывают её сами)
 make deploy               # Ansible + Argo CD, идемпотентно (INVENTORY=... для своего inventory)
 make verify               # smoke-тесты: Gateway API, Prometheus, SLO, Kyverno, Loki
 make cis                  # CIS Kubernetes Benchmark на ноде (kube-bench)
@@ -77,6 +78,7 @@ make hooks                # поставить git-хуки pre-commit
 make lint                 # все хуки pre-commit по всем файлам (то же, что CI lint)
 make slo                  # SLO-правила из спецификации Sloth (monitoring/slo -> manifests/slo-rules.yaml)
 make kubescape            # Kubescape (NSA, MITRE) по отрендеренным манифестам
+make render               # отрендерить Kustomize-деревья в .rendered/ (вход для сканеров)
 ```
 
 Python-зависимости: правишь только `ansible/requirements.in` (Ansible) или `.github/ci-requirements.in` (инструменты CI),

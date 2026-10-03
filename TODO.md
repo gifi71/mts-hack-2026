@@ -18,6 +18,8 @@
   - [ ] всё, что было неочевидно, дописать в README.
 - [ ] Перечитать README и паспорт целиком, `make passport` (не больше 4 страниц).
 - [ ] Формат `Ссылка.txt`: URL репозитория или `/tree/main`.
+- [ ] Запустить `ci` вручную на финальном коммите `main` (Actions → ci → Run workflow): коммиты только с документацией
+      фильтр `paths` пропускает, и у сдаваемого коммита не будет своего e2e.
 - [ ] `make submission SURNAME=<фамилия при регистрации>`, загрузить архив заранее.
 - [ ] Следить за чатом: организаторы обещали ответить про недоступные из РФ реестры (Docker Hub, `get.helm.sh`, `ghcr.io`).
 - [ ] После 23:59 МСК 4 октября в `main` ничего не пушить.
@@ -28,7 +30,6 @@
 
 - [ ] Branch protection для `main`: изменения только через PR, обязательные проверки `ci` и `security`,
       запрет force-push и удаления. Поднимет Scorecard (Branch-Protection, Code-Review, CI-Tests).
-- [ ] Private vulnerability reporting (Settings → Code security): на него ссылается [SECURITY.md](SECURITY.md).
 - [ ] Заявка на OpenSSF Best Practices badge на bestpractices.dev (Scorecard: CII-Best-Practices).
 - [ ] Подписанный релиз: тег на сданном коммите и GitHub Release с SBOM и подписью cosign (Scorecard: Signed-Releases).
 

@@ -16,7 +16,7 @@ make deploy    # Ansible: ОС → containerd → kubeadm → Calico → Argo CD
 make verify    # smoke-тесты: Gateway API, Prometheus, логи в Loki
 ```
 
-Повторный `make deploy` ничего не меняет (`changed=0`). CI проверяет это на каждом коммите: поднимает кластер на чистом раннере `ubuntu-24.04` (около 13 минут), повторяет развёртывание и запускает `make verify`.
+Повторный `make deploy` ничего не меняет (`changed=0`). CI проверяет это на каждом коммите: поднимает кластер на чистом раннере `ubuntu-24.04` (10-15 минут), повторяет развёртывание и запускает `make verify`.
 
 ## Содержание
 
@@ -206,7 +206,9 @@ make verify
 
 ## Проверка
 
-`make verify` выполняет все проверки ниже на узле и печатает `PASS/FAIL` по каждой.
+`make verify` выполняет все проверки ниже на узле и печатает `PASS/FAIL` по каждой. Код выхода зависит только от FAIL.
+Проверки Kyverno, которым нужны `ghcr.io` и Sigstore (Rekor, TUF), при недоступности этих сервисов печатают `WARN`:
+дополнительная часть не делает красной проверку обязательной.
 Пример вывода со стенда автора:
 
 ```
@@ -392,7 +394,8 @@ LogQL для Grafana (Explore → Loki):
   - **CIS Kubernetes Benchmark**: control plane настроен по CIS (profiling выключен, audit log API server с политикой
     [audit-policy.yaml](ansible/roles/kubeadm/files/audit-policy.yaml), права 600 на файлы kubelet). kube-bench проверяет
     узел в e2e и через `make cis`: 73 PASS и 0 FAIL, 4 принятых исключения с причинами в [tests/cis/kube-bench.sh](tests/cis/kube-bench.sh);
-  - **Kubescape**: наши манифесты соответствуют NSA hardening guide и MITRE ATT&CK на 100% (`make kubescape`).
+  - **Kubescape**: наши манифесты проверяются по NSA hardening guide и MITRE ATT&CK (`make kubescape`), CI падает на находках
+    HIGH и CRITICAL. На момент сдачи находок нет ни одной, обе оценки 100%.
 - **Цепочка поставки**: свой образ Fluentd собирается в CI ([images/fluentd](images/fluentd/Dockerfile)):
   - Debian-пакеты обновляются из snapshot.debian.org на зафиксированную дату: патчи безопасности есть, а версии пакетов при пересборке те же;
   - до публикации образ проверяется и сканируется Trivy, исправимые HIGH и CRITICAL останавливают сборку;
@@ -428,6 +431,11 @@ LogQL для Grafana (Explore → Loki):
 | `codeql` | CodeQL по workflow GitHub Actions (инъекции через входные данные, лишние права): SAST, результаты в Security |
 | `scorecard` | OpenSSF Scorecard репозитория (пины, права токенов, защита веток): SARIF в Security и бейдж в README |
 | `image-fluentd` | сборка образа Fluentd, проверка, Trivy (гейт до публикации), push в ghcr.io с SBOM и provenance, подпись cosign |
+
+Scorecard для репозитория одного автора без релизов часть проверок честно оценивает в 0: Branch-Protection, Code-Review
+и CI-Tests (изменения идут коммитами в `main`, без pull request), Maintained и Contributors (репозиторию меньше 90 дней,
+автор один), Fuzzing (нечего фаззить), CII-Best-Practices и Signed-Releases. Эти алерты видны во вкладке Security;
+что из них включается после сдачи, записано в [TODO.md](TODO.md).
 
 Принятые исключения сканеров с обоснованием: [.trivyignore](.trivyignore) (IaC), [images/fluentd/.trivyignore.yaml](images/fluentd/.trivyignore.yaml) (образ).
 
