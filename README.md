@@ -480,6 +480,10 @@ TODO.md               что осталось сделать
   [ansible/mirrors.example.yml](ansible/mirrors.example.yml): `make deploy ANSIBLE_ARGS="-e @ansible/mirrors.yml"`.
   Helm-чарты (`*.github.io`, `charts.jetstack.io`, релизы Calico на `github.com`) и сам репозиторий качаются напрямую,
   для них нужен прокси или VPN.
+  Проверено 2026-10-03 на сети, где DPI режет CDN Docker Hub (CloudFront): `mirror.gcr.io` это pull-through-кэш,
+  слои, которых в нём нет, он перенаправляет на тот же CDN Docker Hub. Поэтому настройка containerd не помогает,
+  даже если указать `mirror.gcr.io` единственным хостом для `docker.io`. В такой сети нужно своё зеркало, которое
+  отдаёт слои само (Harbor или `registry:2` в режиме proxy за VPN), и его адрес в `mirrors.yml`.
 - **Argo CD берёт код из GitHub**, а не из локальной копии: локальные правки в `gitops/` в кластер не попадут.
 - **Только amd64**: бинарник Helm и образ Fluentd собраны под amd64.
 - **IP узла постоянный**: он зашит в сертификаты kubeadm.

@@ -8,6 +8,11 @@
 # work: with an unreachable mirror the fallback worked for registry.k8s.io, but blob
 # downloads from quay.io stalled (containerd 2.2, tested 2026-10-03). Drop the entries
 # you do not need.
+#
+# mirror.gcr.io is a pull-through cache: layers it does not hold are redirected to Docker
+# Hub's CDN. Where that CDN is blocked, mirror.gcr.io does not help even as the only host
+# (tested 2026-10-03); use a mirror that serves the layers itself (Harbor, registry:2 in
+# proxy mode behind a VPN) instead of the example URLs below.
 containerd_registry_hosts:
   docker.io: # Envoy, Grafana, Loki, local-path-provisioner, Redis for Argo CD
     server: https://registry-1.docker.io
