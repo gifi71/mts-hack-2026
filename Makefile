@@ -50,8 +50,9 @@ deps: $(VENV)/.deps ## Install pinned Ansible and collections into .venv
 
 # Developer only: experts install the generated lock with plain pip.
 .PHONY: lock
-lock: ## Regenerate ansible/requirements.txt (hashes, all transitive deps) from requirements.in with uv
+lock: ## Regenerate the hashed Python locks (Ansible, CI tools) from their requirements.in with uv
 	uv pip compile ansible/requirements.in --generate-hashes --universal --python-version 3.12 --quiet -o ansible/requirements.txt
+	uv pip compile .github/ci-requirements.in --generate-hashes --universal --python-version 3.12 --quiet -o .github/ci-requirements.txt
 
 .PHONY: check-inventory
 check-inventory:

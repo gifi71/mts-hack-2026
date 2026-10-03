@@ -79,7 +79,8 @@ make slo                  # SLO-правила из спецификации Slo
 make kubescape            # Kubescape (NSA, MITRE) по отрендеренным манифестам
 ```
 
-Python-зависимости: правишь только `ansible/requirements.in`, потом `make lock`. `requirements.txt` руками не редактировать.
+Python-зависимости: правишь только `ansible/requirements.in` (Ansible) или `.github/ci-requirements.in` (инструменты CI),
+потом `make lock`. Файлы `*requirements.txt` руками не редактировать.
 SLO: правишь только `gitops/platform/monitoring/slo/demo-app.yaml`, потом `make slo`. `slo-rules.yaml` сгенерирован.
 
 `ANSIBLE_ARGS` передаётся во все цели с плейбуками: `-K` (пароль sudo), `-e gitops_revision=<ветка>` и т.п.

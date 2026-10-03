@@ -1,0 +1,3 @@
+# Python tools of the CI lint job. Edit this file, then `make lock` pins every
+# transitive dependency by hash in ci-requirements.txt.
+pre-commit==4.6.2

@@ -142,7 +142,8 @@ check "signed Fluentd image admitted (${signed##*/})" contains "$out" "pod/verif
 # The tag cosign creates next to a signed image (sha256-<digest>) is an artifact without a
 # signature of its own: the policy must reject it by digest.
 repo=gifi71/mts-hack-2026/fluentd
-token=$(curl -fsS "https://ghcr.io/token?scope=repository:${repo}:pull" | python3 -c 'import sys, json; print(json.load(sys.stdin)["token"])' || true)
+token_json=$(curl -fsS "https://ghcr.io/token?scope=repository:${repo}:pull" || echo '{"token": ""}')
+token=$(python3 -c 'import sys, json; print(json.loads(sys.argv[1]).get("token", ""))' "$token_json")
 artifact=$(curl -fsSI -H "Authorization: Bearer ${token}" \
   -H "Accept: application/vnd.oci.image.index.v1+json,application/vnd.oci.image.manifest.v1+json" \
   "https://ghcr.io/v2/${repo}/manifests/sha256-${signed##*@sha256:}" 2>/dev/null |

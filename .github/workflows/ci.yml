@@ -36,10 +36,10 @@ jobs:
         with:
           version: "0.12.21"
 
-      - name: Lock file matches requirements.in
+      - name: Lock files match requirements.in
         run: |
           make lock
-          git diff --exit-code ansible/requirements.txt
+          git diff --exit-code ansible/requirements.txt .github/ci-requirements.txt
 
       - name: SLO rules match the Sloth spec
         env:
@@ -73,7 +73,7 @@ jobs:
         env:
           SKIP: gitleaks
         run: |
-          pip install pre-commit==4.6.2
+          pip install --require-hashes -r .github/ci-requirements.txt
           pre-commit run --all-files --show-diff-on-failure
 
       - name: OpenTofu validate, test
@@ -84,9 +84,12 @@ jobs:
           version: v3.22.0
 
       - name: Install kubeconform
+        env:
+          KUBECONFORM_SHA256: 9bc2bffbf71f261128533edaf912153948b7ff238f9a531ae6d34466ec287883
         run: |
-          curl -fsSL https://github.com/yannh/kubeconform/releases/download/v0.8.0/kubeconform-linux-amd64.tar.gz \
-            | sudo tar -xz -C /usr/local/bin kubeconform
+          curl -fsSLo kubeconform.tar.gz https://github.com/yannh/kubeconform/releases/download/v0.8.0/kubeconform-linux-amd64.tar.gz
+          echo "${KUBECONFORM_SHA256}  kubeconform.tar.gz" | sha256sum -c -
+          sudo tar -xzf kubeconform.tar.gz -C /usr/local/bin kubeconform
 
       - name: Render and validate Kubernetes manifests
         run: make manifests-check
