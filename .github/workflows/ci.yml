@@ -41,6 +41,17 @@ jobs:
           make lock
           git diff --exit-code ansible/requirements.txt
 
+      - name: SLO rules match the Sloth spec
+        env:
+          SLOTH_VERSION: 0.16.0
+          SLOTH_SHA256: 1cecaa50853abbb3669a928612b523df8174d258ea6f2a3c8f048e5fc5af90b2
+        run: |
+          curl -fsSLo sloth "https://github.com/slok/sloth/releases/download/v${SLOTH_VERSION}/sloth-linux-amd64"
+          echo "${SLOTH_SHA256}  sloth" | sha256sum -c -
+          sudo install -m 0755 sloth /usr/local/bin/sloth
+          make slo
+          git diff --exit-code gitops/platform/monitoring/manifests/slo-rules.yaml
+
       # Checks that the hashed lock installs, as make deps does on the controller.
       - name: Install Ansible from the lock
         run: pip install --require-hashes -r ansible/requirements.txt

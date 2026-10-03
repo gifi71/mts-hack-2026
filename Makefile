@@ -122,6 +122,14 @@ manifests-check: ## Render the app of apps and kustomize trees, validate with ku
 	  kubectl kustomize $$d | kubeconform -strict -summary -schema-location default -schema-location '$(CRD_SCHEMAS)' -skip EnvoyProxy || exit 1; \
 	done
 
+SLOTH ?= sloth
+SLO_SPEC := gitops/platform/monitoring/slo/demo-app.yaml
+SLO_RULES := gitops/platform/monitoring/manifests/slo-rules.yaml
+
+.PHONY: slo
+slo: ## Generate SLO recording rules and burn-rate alerts from the Sloth spec
+	$(SLOTH) generate -i $(SLO_SPEC) -o $(SLO_RULES)
+
 RENDER_DIR := .rendered
 KUBESCAPE ?= kubescape
 KUBESCAPE_ARGS ?=

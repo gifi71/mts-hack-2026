@@ -123,6 +123,8 @@ n=$(promql_wait 'angie_http_server_zones_responses{zone="demo"}' 1)
 check "PromQL angie_http_server_zones_responses{zone=\"demo\"}: ${n} series" between "$n" 1 100
 n=$(promql_wait 'count by (__name__) ({__name__=~"envoy_cluster_upstream_rq_total|node_cpu_seconds_total|kube_pod_status_ready|apiserver_request_total"})' 4)
 check "PromQL: Envoy, node-exporter, kube-state-metrics, apiserver metrics (${n}/4)" test "$n" -eq 4
+n=$(promql_wait 'slo:sli_error:ratio_rate5m{sloth_service="demo-app"}' 2)
+check "SLO recording rules (Sloth): availability and latency SLIs (${n}/2)" test "$n" -ge 2
 echo "      Angie responses by code: $({ svc_get monitoring kube-prometheus-stack-prometheus:9090 \
   "/api/v1/query?query=$(urlencode 'sum by (code) (angie_http_server_zones_responses{zone="demo"})')" 2>/dev/null ||
   echo "$EMPTY_RESULT"; } |
