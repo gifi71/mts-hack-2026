@@ -27,6 +27,7 @@ make verify    # smoke-тесты: Gateway API, Prometheus, логи в Loki
 - [CI/CD](#cicd)
 - [Структура репозитория](#структура-репозитория)
 - [Ограничения](#ограничения)
+- [Лицензия](#лицензия)
 
 ## Архитектура
 
@@ -88,7 +89,8 @@ flowchart LR
 Версии зафиксированы: пакеты Kubernetes, чарты, образы (Angie и Fluentd по digest), коллекции Ansible, провайдеры OpenTofu.
 Python-зависимости управляющей машины зафиксированы lock-файлом с хешами: ansible-core и все его транзитивные
 зависимости ставятся через `pip install --require-hashes`. Lock генерирует uv (`make lock`), CI проверяет,
-что он совпадает с `ansible/requirements.in`. Для установки uv не нужен.
+что он совпадает с `ansible/requirements.in`. Для установки uv не нужен. Так же по хешам ставятся Python-инструменты
+CI ([.github/ci-requirements.txt](.github/ci-requirements.txt)), а бинарники, которые CI скачивает напрямую (kubeconform, Kubescape, Sloth, kube-bench), проверяются по sha256.
 Исключение: containerd ставится как `2.2.*` из `noble-updates` вместе с runc из Ubuntu. Ubuntu удаляет старые сборки
 из архива, и точный пин сломал бы установку после очередного обновления пакета.
 
@@ -421,6 +423,7 @@ LogQL для Grafana (Explore → Loki):
 | `security` / iac | Trivy config (Kubernetes, Dockerfile, OpenTofu): все находки в Security, HIGH и CRITICAL валят job |
 | `security` / image | cosign verify и Trivy задеплоенного образа Fluentd: исправимые HIGH и CRITICAL валят job на push и PR. В Security видны и CVE без исправления в Debian (пустой Fixed Version): их не закрыть обновлением, гейт их не учитывает. Еженедельный запуск только обновляет Security, чтобы CVE, опубликованная после сдачи, не меняла статус коммита |
 | `security` / kubescape | Kubescape по отрендеренным манифестам (NSA, MITRE ATT&CK): SARIF в Security, HIGH валит job |
+| `codeql` | CodeQL по workflow GitHub Actions (инъекции через входные данные, лишние права): SAST, результаты в Security |
 | `scorecard` | OpenSSF Scorecard репозитория (пины, права токенов, защита веток): SARIF в Security и бейдж в README |
 | `image-fluentd` | сборка образа Fluentd, проверка, Trivy (гейт до публикации), push в ghcr.io с SBOM и provenance, подпись cosign |
 
@@ -445,6 +448,8 @@ tests/cis/            kube-bench.sh: CIS Kubernetes Benchmark (e2e и make cis)
 docs/adr/             архитектурные решения
 docs/passport/        паспорт решения (make passport)
 docs/task/            текст кейса и ответы организаторов на Q&A-сессии
+SECURITY.md           как сообщить об уязвимости, что проверяется автоматически
+TODO.md               что осталось сделать
 ```
 
 ## Ограничения
@@ -476,3 +481,8 @@ docs/task/            текст кейса и ответы организато
   controller-manager и scheduler слушают IP узла ради метрик. Бенчмарк `cis-1.12` рассчитан на Kubernetes 1.32-1.34,
   отдельного для 1.36 в kube-bench пока нет.
 - **Fluentd работает от root.** Ему нужен доступ к `/var/log` ноды, поэтому namespace `logging` не под PSA `restricted`.
+
+## Лицензия
+
+[Apache License 2.0](LICENSE). Завендоренные чарты Envoy Gateway и официальные дашборды Argo CD, Envoy Gateway
+и Sloth распространяются без изменений под своими лицензиями (тоже Apache 2.0), подробности в [NOTICE](NOTICE).
