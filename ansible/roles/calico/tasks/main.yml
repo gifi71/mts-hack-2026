@@ -22,7 +22,7 @@
     release_values: "{{ calico_values }}"
     binary_path: /usr/local/bin/helm
     wait: true
-    wait_timeout: 10m
+    timeout: 10m
   # Not the kubeconfig option: its action plugin reads that path on the controller,
   # which fails with connection: local (file is root-only).
   environment:
