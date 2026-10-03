@@ -5,7 +5,8 @@
 #   1. Cluster and Argo CD applications are healthy
 #   2. The app answers through Gateway API: HTTP, HTTPS, header/path routing, traffic split
 #   3. Prometheus scrapes the app and the gateway, PromQL returns data
-#   4. Access and error log lines with a unique marker show up in Loki (Fluentd pipeline)
+#   4. Kyverno admits the signed Fluentd image and denies an unsigned one
+#   5. Access and error log lines with a unique marker show up in Loki (Fluentd pipeline)
 set -euo pipefail
 
 export KUBECONFIG="${KUBECONFIG:-/etc/kubernetes/admin.conf}"
@@ -129,6 +130,27 @@ echo "      Angie responses by code: $({ svc_get monitoring kube-prometheus-stac
   "/api/v1/query?query=$(urlencode 'sum by (code) (angie_http_server_zones_responses{zone="demo"})')" 2>/dev/null ||
   echo "$EMPTY_RESULT"; } |
   python3 -c 'import sys, json; print(", ".join(r["metric"]["code"] + "=" + r["value"][1] for r in json.load(sys.stdin)["data"]["result"]))')"
+
+section "Admission policies (Kyverno)"
+# Server-side dry runs: the API server calls the Kyverno webhook, nothing is created.
+dry_run_pod() { # name image -> admission output
+  kubectl -n logging run "$1" --image="$2" --restart=Never --dry-run=server -o name 2>&1 || true
+}
+signed=$(kubectl -n logging get daemonset fluentd -o jsonpath='{.spec.template.spec.containers[0].image}')
+out=$(dry_run_pod verify-signed "$signed")
+check "signed Fluentd image admitted (${signed##*/})" contains "$out" "pod/verify-signed"
+# The tag cosign creates next to a signed image (sha256-<digest>) is an artifact without a
+# signature of its own: the policy must reject it by digest.
+repo=gifi71/mts-hack-2026/fluentd
+token=$(curl -fsS "https://ghcr.io/token?scope=repository:${repo}:pull" | python3 -c 'import sys, json; print(json.load(sys.stdin)["token"])' || true)
+artifact=$(curl -fsSI -H "Authorization: Bearer ${token}" \
+  -H "Accept: application/vnd.oci.image.index.v1+json,application/vnd.oci.image.manifest.v1+json" \
+  "https://ghcr.io/v2/${repo}/manifests/sha256-${signed##*@sha256:}" 2>/dev/null |
+  awk -F': ' 'tolower($1) == "docker-content-digest" {print $2}' | tr -d '\r' || true)
+out=$(dry_run_pod verify-unsigned "ghcr.io/${repo}@${artifact:-sha256:unknown}")
+check "unsigned image of this repository denied: ${out##*failed: }" contains "$out" "must carry the cosign signature"
+n=$(kubectl get policyreports -A --no-headers 2>/dev/null | wc -l)
+check "PolicyReports for workload policies (${n})" between "$n" 1 100000
 
 section "Logging (Fluentd -> Loki)"
 curl -fsS --max-time 5 -o /dev/null "${HTTP_URL}/?marker=${MARKER}" || true
