@@ -1,0 +1,8 @@
+# Accepted findings for the Fluentd image. Each entry needs a statement.
+vulnerabilities:
+  - id: CVE-2026-80212
+    purls:
+      - pkg:gem/resolv@0.7.1
+    statement: >-
+      Default gem of Ruby 3.4.10, its gemspec stays in the image. The image installs
+      resolv 0.7.2, which require loads instead; the image workflow checks Resolv::VERSION.
