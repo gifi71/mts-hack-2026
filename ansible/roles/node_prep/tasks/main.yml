@@ -41,6 +41,43 @@
       {{ ((ansible_facts.mounts | selectattr('mount', 'equalto', '/') | first).size_available / 1024**3) | round(1) }}
   when: not node_prep_admin_conf.stat.exists
 
+- name: Gather installed packages
+  ansible.builtin.package_facts:
+  when: not node_prep_admin_conf.stat.exists
+
+# Docker's containerd.io conflicts with Ubuntu's containerd package used here, and apt
+# would fail later with a less obvious error.
+- name: Check that Docker is not installed
+  ansible.builtin.assert:
+    that: node_prep_conflicting | length == 0
+    fail_msg: >-
+      Found {{ node_prep_conflicting | join(', ') }}. The cluster uses Ubuntu's containerd,
+      which conflicts with Docker's packages. Use a VM without Docker or remove them:
+      sudo apt-get purge -y {{ node_prep_conflicting | join(' ') }}
+    quiet: true
+  vars:
+    node_prep_conflicting: "{{ node_prep_conflicting_packages | select('in', ansible_facts.packages) | list }}"
+  when: not node_prep_admin_conf.stat.exists
+
+# Overlapping ranges bring the cluster up but break routing to the node's own network.
+- name: Check that pod and service subnets do not overlap the node network
+  ansible.builtin.command:
+    argv:
+      - python3
+      - -c
+      - |
+        import ipaddress, sys
+        node = ipaddress.ip_interface(sys.argv[1]).network
+        overlap = [c for c in sys.argv[2:] if node.overlaps(ipaddress.ip_network(c))]
+        if overlap:
+            sys.exit(f"Node network {node} overlaps {', '.join(overlap)}. "
+                     "Pick other ranges: -e k8s_pod_subnet=... -e k8s_service_subnet=...")
+      - "{{ ansible_facts.default_ipv4.address }}/{{ ansible_facts.default_ipv4.prefix }}"
+      - "{{ k8s_pod_subnet }}"
+      - "{{ k8s_service_subnet }}"
+  changed_when: false
+  when: not node_prep_admin_conf.stat.exists
+
 - name: Install base packages
   ansible.builtin.apt:
     # Fresh cloud images run unattended-upgrades at boot and hold the dpkg lock.

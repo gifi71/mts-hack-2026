@@ -23,3 +23,4 @@ node_prep_sysctl:
 # Checked before the first install only (re-runs on a working node are not blocked).
 node_prep_min_memory_mb: 7000 # an "8 GB" VM reports about 7.7 GiB
 node_prep_min_root_free_gb: 15
+node_prep_conflicting_packages: [docker-ce, containerd.io]
