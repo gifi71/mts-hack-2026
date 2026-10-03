@@ -373,7 +373,7 @@ LogQL для Grafana (Explore → Loki):
 | `ci` / e2e | чистый раннер `ubuntu-24.04`: `make deploy` с kubeadm, повторный `make deploy` (должен быть `changed=0`), `make verify` |
 | `security` / secrets | gitleaks по всей истории git, падает на любом найденном секрете |
 | `security` / iac | Trivy config (Kubernetes, Dockerfile, OpenTofu): все находки в Security, HIGH и CRITICAL валят job |
-| `security` / image | cosign verify и Trivy задеплоенного образа Fluentd: исправимые HIGH и CRITICAL валят job на push и PR. Еженедельный запуск только обновляет Security, чтобы CVE, опубликованная после сдачи, не меняла статус коммита |
+| `security` / image | cosign verify и Trivy задеплоенного образа Fluentd: исправимые HIGH и CRITICAL валят job на push и PR. В Security видны и CVE без исправления в Debian (пустой Fixed Version): их не закрыть обновлением, гейт их не учитывает. Еженедельный запуск только обновляет Security, чтобы CVE, опубликованная после сдачи, не меняла статус коммита |
 | `image-fluentd` | сборка образа Fluentd, проверка, Trivy (гейт до публикации), push в ghcr.io с SBOM и provenance, подпись cosign |
 
 Принятые исключения сканеров с обоснованием: [.trivyignore](.trivyignore) (IaC), [images/fluentd/.trivyignore.yaml](images/fluentd/.trivyignore.yaml) (образ).
