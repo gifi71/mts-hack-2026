@@ -1,9 +1,17 @@
 name: ci
 
+# Documentation-only changes skip lint and the 13-minute e2e; the security
+# workflow still runs on them (gitleaks covers docs too).
 on:
   push:
     branches: [main]
+    paths: &code
+      - "**"
+      - "!docs/**"
+      - "!**/*.md"
+      - docs/passport/build.sh # shellcheck in lint
   pull_request:
+    paths: *code
   workflow_dispatch:
 
 permissions:
@@ -73,7 +81,7 @@ jobs:
 
   e2e:
     name: e2e on a clean Ubuntu 24.04 (kubeadm)
-    needs: lint
+    # Runs alongside lint, not after it: lint takes under a minute, e2e about 13.
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     steps:
