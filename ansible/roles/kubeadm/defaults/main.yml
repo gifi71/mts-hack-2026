@@ -5,8 +5,8 @@ kubeadm_pod_subnet: "{{ k8s_pod_subnet }}"
 kubeadm_service_subnet: "{{ k8s_service_subnet }}"
 kubeadm_advertise_address: "{{ ansible_facts.default_ipv4.address }}"
 # The machine hostname, not the inventory alias: any inventory (SSH or local)
-# then refers to the same Kubernetes node.
-kubeadm_node_name: "{{ ansible_facts.hostname }}"
+# then refers to the same Kubernetes node. Lowercase: node names must be RFC 1123.
+kubeadm_node_name: "{{ ansible_facts.hostname | lower }}"
 kubeadm_cert_sans: []
 kubeadm_config_path: /etc/kubernetes/kubeadm-config.yaml
 kubeadm_admin_kubeconfig: /etc/kubernetes/admin.conf

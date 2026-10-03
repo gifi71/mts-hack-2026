@@ -59,15 +59,15 @@ deploy: deps check-inventory ## Install Kubernetes and the platform (idempotent,
 
 .PHONY: verify
 verify: deps check-inventory ## Smoke tests: Gateway API routing, Prometheus targets and queries, logs in Loki
-	$(VENV)/bin/ansible-playbook -i $(INVENTORY) ansible/verify.yml
+	$(VENV)/bin/ansible-playbook -i $(INVENTORY) ansible/verify.yml $(ANSIBLE_ARGS)
 
 .PHONY: credentials
 credentials: deps check-inventory ## Print Grafana and Argo CD admin passwords (generated at install)
-	$(VENV)/bin/ansible-playbook -i $(INVENTORY) ansible/info.yml --tags credentials
+	$(VENV)/bin/ansible-playbook -i $(INVENTORY) ansible/info.yml --tags credentials $(ANSIBLE_ARGS)
 
 .PHONY: ca-cert
 ca-cert: deps check-inventory ## Save the local CA certificate to mts-hack-ca.crt (for curl --cacert / browser)
-	$(VENV)/bin/ansible-playbook -i $(INVENTORY) ansible/info.yml --tags ca
+	$(VENV)/bin/ansible-playbook -i $(INVENTORY) ansible/info.yml --tags ca $(ANSIBLE_ARGS)
 
 .PHONY: ssh
 ssh: deps check-inventory ## Open a shell on the node (same key, known_hosts and jump host as Ansible)
