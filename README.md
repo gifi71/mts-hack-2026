@@ -2,6 +2,7 @@
 
 [![ci](https://github.com/gifi71/mts-hack-2026/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/gifi71/mts-hack-2026/actions/workflows/ci.yml)
 [![security](https://github.com/gifi71/mts-hack-2026/actions/workflows/security.yml/badge.svg?branch=main)](https://github.com/gifi71/mts-hack-2026/actions/workflows/security.yml)
+[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/gifi71/mts-hack-2026/badge)](https://scorecard.dev/viewer/?uri=github.com/gifi71/mts-hack-2026)
 [![image-fluentd](https://github.com/gifi71/mts-hack-2026/actions/workflows/image-fluentd.yml/badge.svg?branch=main)](https://github.com/gifi71/mts-hack-2026/actions/workflows/image-fluentd.yml)
 
 Kubernetes-кластер на **kubeadm** с нуля на Ubuntu 24.04 и платформа вокруг демо-приложения:
