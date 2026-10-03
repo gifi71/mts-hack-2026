@@ -26,11 +26,11 @@
 |---|---|---|---|
 | Kubernetes | Ansible-роли: подготовка ОС, containerd, пакеты из pkgs.k8s.io, `kubeadm init` по конфигу v1beta4, Calico | kubeadm в приоритете ТЗ; одна ВМ минимизирует ручные действия эксперта | `make verify` → `node Ready: v1.36.5` |
 | Приложение | Angie 1.12.2 (open-source веб-сервер), две версии из одной Kustomize-базы, ответ `Hello World! (angie v1)` | Angie указан в ТЗ, у него встроенные Prometheus-метрики | `curl http://<IP>:30080/` |
-| Gateway API | GatewayClass `envoy` + EnvoyProxy (NodePort 30080/30443), Gateway `edge` (HTTP и HTTPS), HTTPRoute | Envoy Gateway: CNCF-референс Gateway API; NodePort работает в любой сети | `make verify`, раздел Gateway API |
+| Gateway API | GatewayClass `envoy` + EnvoyProxy (NodePort 30080/30443), Gateway `edge` (HTTP и HTTPS), HTTPRoute | Envoy Gateway: проект Envoy в CNCF, полное соответствие Gateway API, метрики Envoy по маршрутам; NodePort работает в любой сети | `make verify`, раздел Gateway API |
 | Мониторинг | kube-prometheus-stack, ServiceMonitor/PodMonitor для Angie, Envoy, Argo CD, Calico; метрики control plane | Prometheus Operator: мониторы описываются рядом с компонентом | `make verify`: target-ы `up`, PromQL по `angie_http_server_zones_responses` |
-| Логирование | Fluentd DaemonSet: CRI-логи, метаданные Kubernetes, разбор JSON access-лога Angie, отправка в Loki | Fluentd разрешён ТЗ; Loki лёгкий и встраивается в ту же Grafana | `make verify`: запрос с уникальной меткой находится в Loki |
-| Ubuntu 24.04 | проверено на ВМ Proxmox и в CI на `ubuntu-24.04` | | вкладка Actions репозитория |
-| Автоматизация | `make deploy` (Ansible + Argo CD), повторный запуск ничего не меняет | | CI: второй `make deploy` обязан дать `changed=0` |
+| Логирование | Fluentd DaemonSet: CRI-логи, метаданные Kubernetes, разбор JSON access-лога Angie, error-лог в stderr, отправка в Loki | Fluentd разрешён ТЗ; Loki лёгкий и встраивается в ту же Grafana | `make verify`: строки access- и error-лога с уникальной меткой находятся в Loki |
+| Ubuntu 24.04 | проверено на cloud image (ВМ Proxmox) и в CI на `ubuntu-24.04`; пакеты из `noble-updates`, проверка версии ОС в Ansible | тот же образ, что у проверяющих (Ubuntu cloud image); CI даёт публичное подтверждение на каждом коммите | вкладка Actions репозитория |
+| Автоматизация | `make deploy`: Ansible от пакетов ОС до Argo CD, дальше Argo CD; повторный запуск ничего не меняет | одна команда от чистой ВМ до рабочей платформы; Ansible идемпотентен, Argo CD сам приводит кластер к состоянию из git | CI: второй `make deploy` обязан дать `changed=0` |
 
 ### Дополнительные улучшения
 
@@ -38,11 +38,11 @@
 |---|---|---|---|
 | Расширенный Gateway API | HTTPS (cert-manager, свой CA), редирект HTTP→HTTPS, маршруты по hostname, path, заголовку, `URLRewrite`, split 90/10, таймауты, заголовки ответа | показать возможности Gateway API из ТЗ | `make verify`: HTTPS, `X-Canary`, `/v2`, split |
 | GitOps | Argo CD, app of apps, sync-waves, self-heal, server-side diff | изменения только через git, дрейф исправляется сам | `argocd.mts-hack.local:30443` |
-| CI/CD | lint (yamllint, ansible-lint production, shellcheck, tofu test, kubeconform), security (gitleaks, Trivy), e2e kubeadm на чистой Ubuntu 24.04 | доказывает воспроизводимость и идемпотентность на каждом коммите | Actions → `ci` |
-| Цепочка поставки | свой образ Fluentd: Trivy, SBOM, SLSA provenance, подпись cosign; базовые образы по digest | DevSecOps на реальном артефакте | `cosign verify` (команда в README) |
+| CI/CD | lint (yamllint, ansible-lint production, shellcheck, tofu test, kubeconform), security (gitleaks, Trivy), e2e kubeadm на чистой Ubuntu 24.04 | проверяет воспроизводимость и идемпотентность на каждом коммите | Actions → `ci` |
+| Цепочка поставки | свой образ Fluentd: Trivy, SBOM, SLSA provenance, подпись cosign; образ и его база по digest | образ собираем сами, значит отвечаем за его происхождение и уязвимости | `cosign verify` (команда в README) |
 | Безопасность в кластере | PSA `restricted`, non-root, read-only FS, NetworkPolicy default-deny, секреты генерируются при установке | минимальные права приложения | `kubectl -n demo get netpol`, `kubectl get ns demo --show-labels` |
-| Расширенная наблюдаемость | дашборд Grafana как код, алерты (доступность, 5xx, p95, ошибки доставки логов), метрики control plane, структурированные логи | RPS, коды, latency, CPU/RAM в одном месте | Grafana → «MTS Hack: gateway, app, logs» |
-| Работа при блокировках | зеркало `mirror.gcr.io` для Docker Hub в containerd, завендоренный чарт Envoy Gateway, Calico из GitHub Releases, resolv.conf без чужих search-доменов | установка не зависит от Docker Hub и сетевых особенностей | `cat /etc/containerd/certs.d/docker.io/hosts.toml` |
+| Расширенная наблюдаемость | дашборд Grafana как код, алерты (доступность, 5xx, p95, ошибки доставки логов; видны в UI, канал уведомлений не настроен), метрики control plane, структурированные логи, 404/500 в приложении | RPS, коды, latency, CPU/RAM и логи в одном месте | Grafana → «MTS Hack: gateway, app, logs» |
+| Меньше внешних зависимостей | зеркало `mirror.gcr.io` для `docker.io` в containerd, завендоренный чарт Envoy Gateway, Calico из GitHub Releases, resolv.conf без чужих search-доменов | Docker Hub и часть реестров нестабильны из РФ | `cat /etc/containerd/certs.d/docker.io/hosts.toml` |
 | Провижининг ВМ | OpenTofu: ВМ на Proxmox, cloud-init, inventory, закреплённый host key | цикл «с нуля» одной командой | `make infra-up` |
 
 ## 3. Ревью и масштабирование

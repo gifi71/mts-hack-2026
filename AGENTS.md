@@ -37,15 +37,17 @@ infra/tofu/          OpenTofu: одна ВМ Ubuntu 24.04 на Proxmox, inventor
   proxmox/           root-модуль
 ansible/             site.yml (развёртывание), verify.yml, info.yml; роли: узел, kubeadm, Calico, Argo CD
 gitops/
-  bootstrap/         root Application (app-of-apps)
-  apps/              только манифесты Argo CD Application, порядок через sync-wave
-  platform/<comp>/   values и манифесты компонента: envoy-gateway, cert-manager, monitoring, logging, policies
+  apps/              Helm-чарт app-of-apps: Argo CD Application на компонент, порядок через sync-wave.
+                     Root Application создаёт Ansible (roles/argocd/templates/root-app.yaml.j2)
+  platform/<comp>/   values и манифесты компонента: argocd, envoy-gateway, gateway, cert-manager, monitoring,
+                     logging, local-path-provisioner
   workloads/         демо-приложение (Kustomize base + overlays)
 tests/smoke/         verify.sh: проверки Gateway, метрик и логов (make verify)
 images/fluentd/      Dockerfile образа Fluentd с плагином Loki (собирается в CI)
 scripts/             вспомогательные скрипты (ssh-node.sh)
 docs/adr/            архитектурные решения, одно решение на файл
 docs/passport/       исходники паспорта решения
+docs/task/           текст кейса и ответы организаторов (Q&A): источник требований
 .github/workflows/   CI
 Makefile             единая точка входа, все команды через него
 ```
@@ -66,7 +68,10 @@ make infra-up / infra-down   # ВМ на Proxmox (OpenTofu)
 make tofu-check           # fmt, validate, tofu test
 make manifests-check      # helm lint + kubeconform по всем отрендеренным манифестам
 make passport             # docs/passport/Паспорт.pdf
+make submission SURNAME=…  # dist/<SURNAME>.zip: Ссылка.txt + Паспорт.pdf для сдачи
 ```
+
+`ANSIBLE_ARGS` передаётся во все цели с плейбуками: `-K` (пароль sudo), `-e gitops_revision=<ветка>` и т.п.
 
 Ansible-lint локально: `cd ansible && uvx --with ansible-core==2.21.4 ansible-lint --profile production site.yml verify.yml info.yml`.
 

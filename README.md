@@ -80,7 +80,9 @@ flowchart LR
 | ansible-core | 2.21.4 | `make deps` в `.venv` |
 | OpenTofu | ≥ 1.8 (проверено на 1.12.6), провайдер bpg/proxmox 0.114.0 | опционально |
 
-Все версии зафиксированы: пакеты, чарты, образы (Angie и база Fluentd по digest), коллекции Ansible, провайдеры OpenTofu.
+Версии зафиксированы: пакеты Kubernetes, чарты, образы (Angie и Fluentd по digest), коллекции Ansible, провайдеры OpenTofu.
+Исключение: containerd ставится как `2.2.*` из `noble-updates` вместе с runc из Ubuntu. Ubuntu удаляет старые сборки
+из архива, и точный пин сломал бы установку после очередного обновления пакета.
 
 ### Совместимость
 
@@ -106,11 +108,31 @@ flowchart LR
 
 ## Требования
 
-**Узел кластера**: одна ВМ **Ubuntu 24.04**, 4 vCPU, 8 ГБ RAM, 30 ГБ диска, доступ в интернет.
-Пользователь с `sudo` без пароля.
+**Проверено на**: Ubuntu 24.04.5 LTS (cloud image, ВМ на Proxmox, 4 vCPU, 8 ГБ RAM, 30 ГБ диска) и раннер
+GitHub Actions `ubuntu-24.04` (каждый коммит, job `e2e`).
+
+**Узел кластера**: одна ВМ **Ubuntu 24.04** amd64, 4 vCPU, 8 ГБ RAM, 30 ГБ свободного места на `/`, доступ в интернет.
+Перед установкой `make deploy` проверяет RAM и место на диске.
+
+**sudo без пароля.** В cloud image Ubuntu так настроено по умолчанию. Если ВМ поставлена с ISO, есть два варианта:
+
+```bash
+echo "$USER ALL=(ALL) NOPASSWD:ALL" | sudo tee /etc/sudoers.d/90-$USER   # один раз
+# или вводить пароль sudo при каждом запуске:
+make deploy INVENTORY=... ANSIBLE_ARGS=-K
+```
+
+Запускать `make` нужно от обычного пользователя, без `sudo make`.
+
+**Сеть.** IP узла должен быть постоянным: kubeadm записывает его в сертификаты, и после смены адреса кластер
+не поднимется. Клиент должен доходить до узла по TCP 30080 и 30443, для варианта 2 ещё по 22.
+
+- VirtualBox в режиме NAT: ВМ не видна с хоста, нужен сетевой адаптер «Сетевой мост» или «Виртуальный адаптер хоста».
+- Hyper-V Default Switch меняет IP ВМ после перезагрузки хоста: лучше внешний коммутатор или статический IP.
+- Облако: открыть 30080/30443 (и 22) в security group или firewall.
 
 **Машина, с которой запускается развёртывание** (можно та же ВМ): `make`, `git`, Python ≥ 3.12 с `venv`, `ssh`.
-На Ubuntu 24.04:
+Linux, macOS или WSL2 на Windows. На Ubuntu 24.04:
 
 ```bash
 sudo apt-get update && sudo apt-get install -y make git python3-venv
@@ -154,6 +176,13 @@ make verify
 
 Подготовка Proxmox и все параметры: [infra/tofu/README.md](infra/tofu/README.md).
 
+**Если `make deploy` упал** (например, на ожидании Argo CD из-за медленного скачивания образов), запустите его ещё раз:
+повторный запуск безопасен и продолжит с того же места. Состояние приложений: `make ssh`, затем
+`kubectl -n argocd get applications`.
+
+**Свой форк.** Argo CD синхронизирует платформу из этого репозитория на GitHub, а не из локальной копии.
+Для своего форка: `make deploy ANSIBLE_ARGS="-e gitops_repo_url=https://github.com/<you>/<fork>.git"`.
+
 Остальные команды: `make help`.
 
 ## Проверка
@@ -171,17 +200,20 @@ PASS  curl http://10.0.1.50:30080/ -> 'Hello World! (angie v1)'
 PASS  HTTPS with the cert-manager CA -> 'Hello World! (angie v1)'
 PASS  header X-Canary: always -> v2 ('Hello World! (angie v2)')
 PASS  path /v2/ (rewritten to /) -> v2 ('Hello World! (angie v2)')
-PASS  traffic split 90/10: v2 served 10/100 requests
+PASS  traffic split 90/10: v2 served 9/100 requests
+PASS  curl http://10.0.1.50:30080/missing -> 404 (expected 404)
+PASS  curl http://10.0.1.50:30080/error -> 500 (expected 500)
 == Prometheus
 PASS  target angie-v1 up (2 pods)
 PASS  target angie-v2 up (1 pods)
 PASS  Envoy targets up (2)
 PASS  PromQL angie_http_server_zones_responses{zone="demo"}: 3 series
 PASS  PromQL: Envoy, node-exporter, kube-state-metrics, apiserver metrics (4/4)
-      Angie responses by code: 200=189
 == Logging (Fluentd -> Loki)
-PASS  access log for ?marker=verify-1790873478-739 found in Loki:
-      {"time":"2026-10-01T16:49:56+00:00","app":"demo","version":"v1",...,"uri":"/?marker=verify-...","status":200,...}
+PASS  access log (stdout) for ?marker=verify-1791020112-16880 found in Loki:
+      {"time":"2026-10-03T09:35:17+00:00","app":"demo","version":"v1",...,"uri":"/?marker=verify-...","status":200,...}
+PASS  error log (stderr) for /missing?marker=verify-1791020112-16880 found in Loki:
+      ... [error] 7#7: *16 open() "/nonexistent/missing" failed (2: No such file or directory) ...
 All checks passed.
 ```
 
@@ -222,8 +254,29 @@ for i in $(seq 100); do curl -s -H 'Host: app.mts-hack.local' http://$NODE:30080
 
 Gateway принимает маршруты только из перечисленных namespace (`allowedRoutes` с селектором).
 
-**UI в браузере.** Добавьте в `/etc/hosts` строку `<IP узла> app.mts-hack.local grafana.mts-hack.local prometheus.mts-hack.local argocd.mts-hack.local`
-и откройте `https://grafana.mts-hack.local:30443`. Логины и пароли выводит `make credentials`.
+**UI в браузере.**
+
+1. Добавьте в `hosts` строку:
+   ```
+   <IP узла> app.mts-hack.local grafana.mts-hack.local prometheus.mts-hack.local argocd.mts-hack.local
+   ```
+   Linux и macOS: `/etc/hosts`. Windows: `C:\Windows\System32\drivers\etc\hosts`, редактор от имени администратора.
+2. Чтобы браузер доверял сертификату, импортируйте CA (`make ca-cert` сохранит `mts-hack-ca.crt`).
+   Windows: `certutil -user -addstore Root mts-hack-ca.crt`. Без этого браузер покажет предупреждение, его можно пропустить.
+3. Откройте:
+
+   | Адрес | Что |
+   |---|---|
+   | `http://app.mts-hack.local:30080` | приложение (Hello World) |
+   | `https://app.mts-hack.local:30443` | приложение по HTTPS |
+   | `https://grafana.mts-hack.local:30443` | Grafana, дашборд «MTS Hack: gateway, app, logs», Explore → Loki |
+   | `https://prometheus.mts-hack.local:30443` | Prometheus: `/targets`, `/alerts` |
+   | `https://argocd.mts-hack.local:30443` | Argo CD |
+
+   Логины и пароли выводит `make credentials`.
+
+**Windows без WSL.** В PowerShell `curl` это псевдоним `Invoke-WebRequest`, поэтому команды выше запускайте как `curl.exe`:
+`curl.exe http://<IP узла>:30080/`. Bash-примеры (`for`, `$NODE`) выполняйте на узле (`make ssh`) или в WSL.
 
 ### Мониторинг
 
@@ -255,8 +308,11 @@ q 'sum by (envoy_cluster_name) (rate(envoy_cluster_upstream_rq_total[5m]))'
 
 1. читает `/var/log/containers/*.log` всех подов, формат CRI;
 2. добавляет метаданные Kubernetes (namespace, pod, labels);
-3. access-лог Angie пишется в JSON, Fluentd разбирает его на поля: `status`, `uri`, `request_time`, `version`, `request_id`;
-4. отправляет в **Loki** с метками `namespace`, `pod`, `container`, `app`, `stream`.
+3. access-лог Angie пишется в stdout в JSON, Fluentd разбирает его на поля: `status`, `uri`, `request_time`, `version`, `request_id`;
+4. error-лог Angie пишется в stderr и попадает в Loki с меткой `stream="stderr"`;
+5. отправляет в **Loki** с метками `namespace`, `pod`, `container`, `app`, `stream`.
+
+Чтобы получить ошибки, в приложении есть `/missing` (404 и строка в error-логе) и `/error` (500).
 
 Loki хранит логи 3 дня, как и Prometheus. Смотреть логи: Grafana → Explore → Loki, или через API на узле:
 
@@ -266,13 +322,20 @@ sleep 10
 kubectl get --raw '/api/v1/namespaces/logging/services/loki:3100/proxy/loki/api/v1/query_range?query=%7Bnamespace%3D%22demo%22%7D%20%7C%3D%20%22check-123%22&limit=5'
 ```
 
-LogQL для Grafana: `{namespace="demo", app="angie"} | json | status >= 400`.
+LogQL для Grafana (Explore → Loki):
+
+```
+{namespace="demo", stream="stdout"} | json | status >= 400     # access-лог: 404 и 500
+{namespace="demo", stream="stderr"}                            # error-лог Angie
+```
 
 ## Дополнительные возможности
 
 - **Расширенный Gateway API**: HTTPS с cert-manager, редирект HTTP → HTTPS, маршрутизация по hostname, path и заголовку, rewrite пути, traffic splitting 90/10, таймауты, изменение заголовков ответа, несколько backend.
 - **GitOps**: Argo CD, app of apps, sync-waves, self-heal. Изменения в кластер попадают только через git.
-- **Идемпотентность доказана**: CI запускает `make deploy` дважды и падает, если второй прогон что-то изменил.
+- **Идемпотентность проверяется в CI**: `make deploy` запускается дважды, job падает, если второй прогон что-то изменил.
+- **Алерты** (PrometheusRule): недоступность приложения и Envoy, доля 5xx, p95 времени ответа, ошибки доставки логов Fluentd.
+  Видны в Prometheus `/alerts` и Alertmanager, канал уведомлений не настроен.
 - **Безопасность**:
   - namespace приложения под Pod Security `restricted`;
   - контейнер non-root, read-only root FS, без capabilities, seccomp `RuntimeDefault`;
@@ -284,14 +347,14 @@ LogQL для Grafana: `{namespace="demo", app="angie"} | json | status >= 400`.
   - получает SBOM и SLSA provenance;
   - подписывается cosign (keyless).
 
-  Базовые образы и Angie закреплены по digest. Проверить подпись:
+  Образ Fluentd, его база и Angie закреплены по digest. Проверить подпись:
 
   ```bash
   cosign verify ghcr.io/gifi71/mts-hack-2026/fluentd:v1.19.3-loki1.3.0 \
     --certificate-identity-regexp '^https://github.com/gifi71/mts-hack-2026/.github/workflows/image-fluentd.yml@refs/heads/main$' \
     --certificate-oidc-issuer https://token.actions.githubusercontent.com
   ```
-- **Устойчивость к блокировкам реестров**: containerd тянет образы Docker Hub через зеркало `mirror.gcr.io`, чарт Envoy Gateway завендорен, Calico ставится из GitHub Releases.
+- **Меньше зависимости от Docker Hub**: containerd тянет образы `docker.io` (Envoy, Grafana, Loki и др.) сначала через зеркало `mirror.gcr.io`, чарт Envoy Gateway завендорен, Calico ставится из GitHub Releases.
 - **Надёжность приложения**: 3 реплики, readiness и liveness probes, PodDisruptionBudget, rolling update без простоя.
 - **Наблюдаемость платформы**: метрики control plane, Argo CD, cert-manager, Fluentd, Calico.
 
@@ -318,7 +381,9 @@ gitops/platform/      values и манифесты компонентов (gatew
 gitops/workloads/     демо-приложение Angie (Kustomize: base + v1/v2)
 images/fluentd/       Dockerfile образа Fluentd с плагином Loki
 tests/smoke/          verify.sh, запускается через make verify
-docs/                 ADR и паспорт решения
+docs/adr/             архитектурные решения
+docs/passport/        паспорт решения (make passport)
+docs/task/            текст кейса и ответы организаторов на Q&A-сессии
 ```
 
 ## Ограничения
@@ -332,5 +397,12 @@ docs/                 ADR и паспорт решения
   требуют пароль, Prometheus нет. Для стенда допустимо, в проде нужна аутентификация на Gateway (OIDC) или отдельная сеть.
 - **Хранилище local-path**: данные Prometheus и Loki живут на диске ноды и пропадают вместе с ней.
 - **State OpenTofu** хранится локально.
-- **Нужен интернет** на узле: пакеты, образы, чарты и этот репозиторий для Argo CD.
+- **Нужен интернет** на узле: пакеты, образы, чарты и этот репозиторий для Argo CD. Организаторы на Q&A подтвердили,
+  что у проверяющих он есть ([docs/task/qa-2026-10-02.md](docs/task/qa-2026-10-02.md)). Из некоторых российских сетей
+  без VPN недоступны Docker Hub, `get.helm.sh`, `registry.k8s.io`, `ghcr.io`; зеркало настроено только для `docker.io`.
+- **Argo CD берёт код из GitHub**, а не из локальной копии: локальные правки в `gitops/` в кластер не попадут.
+- **Только amd64**: бинарник Helm и образ Fluentd собраны под amd64.
+- **IP узла постоянный**: он зашит в сертификаты kubeadm.
+- **Метрики control plane на всех интерфейсах узла**: etcd (`:2381`) и kube-proxy (`:10249`) отдают метрики по HTTP
+  без аутентификации. Для стенда допустимо, в проде их закрывают firewall или ставят прокси с mTLS.
 - **Fluentd работает от root.** Ему нужен доступ к `/var/log` ноды, поэтому namespace `logging` не под PSA `restricted`.

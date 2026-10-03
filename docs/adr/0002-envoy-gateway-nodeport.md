@@ -7,10 +7,12 @@
 
 ## Решение
 
-- **Envoy Gateway 1.9**: CNCF-референс Gateway API, богатые метрики Envoy по маршрутам, TLS, splitting.
-- Данные публикуются через `EnvoyProxy` с `type: NodePort` и фиксированными портами 30080/30443
-  (патч сервиса через `envoyService.patch`).
-- Используются только стандартные ресурсы Gateway API (`GatewayClass`, `Gateway`, `HTTPRoute`).
+- **Envoy Gateway 1.9**: проект Envoy в CNCF, проходит conformance-тесты Gateway API, метрики Envoy по маршрутам,
+  TLS, splitting.
+- Сервис data plane (Envoy proxy) публикуется через NodePort с фиксированными портами 30080/30443.
+  Это задаёт ресурс `EnvoyProxy` (`envoyService.type: NodePort` и патч портов), на него ссылается `GatewayClass`.
+- Маршрутизация описана только стандартными ресурсами Gateway API (`GatewayClass`, `Gateway`, `HTTPRoute`).
+  Единственное расширение Envoy Gateway: `EnvoyProxy` для параметров сервиса, стандартного ресурса для этого нет.
 
 ## Варианты
 

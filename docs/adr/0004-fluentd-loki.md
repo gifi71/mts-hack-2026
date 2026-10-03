@@ -9,8 +9,10 @@
 - **Fluentd 1.19** DaemonSet читает `/var/log/containers`, добавляет метаданные Kubernetes,
   разбирает JSON access-лога Angie и пишет в **Loki 3.7** (monolithic, filesystem, 3 дня).
 - Метрики и логи смотрятся в одной Grafana.
-- Готового образа Fluentd с выводом в Loki нет. Свой образ = официальный `fluentd-kubernetes-daemonset`
-  (по digest) + `fluent-plugin-grafana-loki`. Собирается в CI, сканируется Trivy, подписывается cosign.
+- Готового DaemonSet-образа с выводом в Loki нет: `grafana/fluent-plugin-loki` не содержит фильтра
+  `kubernetes_metadata` и парсера CRI, а у `fluentd-kubernetes-daemonset` нет варианта с Loki.
+  Свой образ = официальный `fluentd-kubernetes-daemonset` (по digest) + `fluent-plugin-grafana-loki`.
+  Собирается в CI, сканируется Trivy, подписывается cosign.
 
 ## Варианты
 
