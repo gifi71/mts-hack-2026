@@ -109,6 +109,19 @@ jobs:
       - name: make verify
         run: make verify INVENTORY=ansible/inventory/localhost.yml
 
+      - name: CIS Kubernetes Benchmark (kube-bench)
+        run: |
+          sudo tests/cis/kube-bench.sh
+          { echo '### kube-bench (CIS)'; echo '```'; grep -E "^== Summary" -A4 kube-bench.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload kube-bench report
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: kube-bench
+          path: kube-bench.txt
+          if-no-files-found: ignore
+
       - name: Diagnostics
         if: failure()
         run: |

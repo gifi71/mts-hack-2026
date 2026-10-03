@@ -73,6 +73,10 @@ credentials: deps check-inventory ## Print Grafana and Argo CD admin passwords (
 ca-cert: deps check-inventory ## Save the local CA certificate to mts-hack-ca.crt (for curl --cacert / browser)
 	$(VENV)/bin/ansible-playbook -i $(INVENTORY) ansible/info.yml --tags ca $(ANSIBLE_ARGS)
 
+.PHONY: cis
+cis: deps check-inventory ## CIS Kubernetes Benchmark on the node (kube-bench, accepted failures skipped)
+	@scripts/ssh-node.sh $(INVENTORY) 'cd /tmp && sudo bash -s' < tests/cis/kube-bench.sh
+
 .PHONY: ssh
 ssh: deps check-inventory ## Open a shell on the node (same key, known_hosts and jump host as Ansible)
 	@scripts/ssh-node.sh $(INVENTORY)
