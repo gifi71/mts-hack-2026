@@ -372,7 +372,7 @@ LogQL для Grafana (Explore → Loki):
 
 | Workflow | Что делает |
 |---|---|
-| `ci` / lint | yamllint, ansible-lint (профиль `production`), shellcheck, `tofu fmt/validate/test`, helm lint, kubeconform по всем отрендеренным манифестам |
+| `ci` / lint | хуки pre-commit ([.pre-commit-config.yaml](.pre-commit-config.yaml)): yamllint, ansible-lint (профиль `production`), shellcheck, hadolint, actionlint, `tofu fmt`, проверки файлов; затем `tofu validate/test`, helm lint, kubeconform по всем отрендеренным манифестам, сверка lock-файла Python |
 | `ci` / e2e | чистый раннер `ubuntu-24.04`: `make deploy` с kubeadm, повторный `make deploy` (должен быть `changed=0`), `make verify` |
 | `security` / secrets | gitleaks по всей истории git, падает на любом найденном секрете |
 | `security` / iac | Trivy config (Kubernetes, Dockerfile, OpenTofu): все находки в Security, HIGH и CRITICAL валят job |
@@ -380,6 +380,9 @@ LogQL для Grafana (Explore → Loki):
 | `image-fluentd` | сборка образа Fluentd, проверка, Trivy (гейт до публикации), push в ghcr.io с SBOM и provenance, подпись cosign |
 
 Принятые исключения сканеров с обоснованием: [.trivyignore](.trivyignore) (IaC), [images/fluentd/.trivyignore.yaml](images/fluentd/.trivyignore.yaml) (образ).
+
+Те же проверки, что в `ci` / lint, запускаются локально перед каждым коммитом:
+`make hooks` ставит git-хуки, `make lint` прогоняет их по всему репозиторию. Нужны `pre-commit` (`pipx install pre-commit` или `uvx pre-commit`) и `tofu`.
 
 CD выполняет Argo CD: после merge в `main` кластер приводится к состоянию из git.
 

@@ -41,30 +41,31 @@ jobs:
           make lock
           git diff --exit-code ansible/requirements.txt
 
-      # Hash mode applies to the whole pip call, so the linters (unhashed) go in a second one.
-      - name: Install Ansible and linters
-        run: |
-          pip install --require-hashes -r ansible/requirements.txt
-          pip install ansible-lint==26.9.0 yamllint==1.38.0
-
-      - name: yamllint
-        run: yamllint --strict .
-
-      - name: ansible-lint (production profile)
-        working-directory: ansible
-        run: |
-          ansible-galaxy collection install -r requirements.yml -p .ansible/collections
-          ansible-lint --profile production site.yml verify.yml info.yml
-
-      - name: shellcheck
-        run: shellcheck tests/smoke/*.sh scripts/*.sh docs/passport/build.sh
+      # Checks that the hashed lock installs, as make deps does on the controller.
+      - name: Install Ansible from the lock
+        run: pip install --require-hashes -r ansible/requirements.txt
 
       - uses: opentofu/setup-opentofu@a1320f892987e89d278cc92dc5adc984fb93aca4 # v2
         with:
           tofu_version: 1.12.6
           tofu_wrapper: false
 
-      - name: OpenTofu fmt, validate, test
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/pre-commit
+          key: pre-commit-${{ hashFiles('.pre-commit-config.yaml') }}
+
+      # The same hooks developers run before each commit (make hooks): yamllint, shellcheck,
+      # hadolint, actionlint, tofu fmt, ansible-lint and file hygiene. gitleaks runs in the
+      # security workflow over the full history.
+      - name: pre-commit (all files)
+        env:
+          SKIP: gitleaks
+        run: |
+          pip install pre-commit==4.6.2
+          pre-commit run --all-files --show-diff-on-failure
+
+      - name: OpenTofu validate, test
         run: make tofu-check
 
       - uses: azure/setup-helm@9bc31f4ebc9c6b171d7bfbaa5d006ae7abdb4310 # v5

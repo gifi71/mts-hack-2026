@@ -45,7 +45,7 @@ gitops/
   workloads/         демо-приложение (Kustomize base + overlays)
 tests/smoke/         verify.sh: проверки Gateway, метрик и логов (make verify)
 images/fluentd/      Dockerfile образа Fluentd с плагином Loki (собирается в CI)
-scripts/             вспомогательные скрипты (ssh-node.sh)
+scripts/             вспомогательные скрипты (ssh-node.sh, ansible-lint.sh для pre-commit)
 docs/adr/            архитектурные решения, одно решение на файл
 docs/passport/       исходники паспорта решения
 docs/task/           текст кейса и ответы организаторов (Q&A): источник требований
@@ -71,13 +71,17 @@ make manifests-check      # helm lint + kubeconform по всем отренде
 make passport             # docs/passport/Паспорт.pdf
 make submission SURNAME=…  # dist/<SURNAME>.zip: Ссылка.txt + Паспорт.pdf для сдачи
 make lock                 # пересобрать ansible/requirements.txt (uv, хеши) после правки requirements.in
+make hooks                # поставить git-хуки pre-commit
+make lint                 # все хуки pre-commit по всем файлам (то же, что CI lint)
 ```
 
 Python-зависимости: правишь только `ansible/requirements.in`, потом `make lock`. `requirements.txt` руками не редактировать.
 
 `ANSIBLE_ARGS` передаётся во все цели с плейбуками: `-K` (пароль sudo), `-e gitops_revision=<ветка>` и т.п.
 
-Ansible-lint локально: `cd ansible && uvx --with ansible-core==2.21.4 ansible-lint --profile production site.yml verify.yml info.yml`.
+Линтеры (yamllint, ansible-lint, shellcheck, hadolint, actionlint, tofu fmt, gitleaks) описаны в
+`.pre-commit-config.yaml`. Перед коммитом: `make lint` (или `uvx pre-commit run --all-files`). Новый
+линтер добавляй хуком туда, CI подхватит его сам.
 
 Добавил цель в Makefile: добавь к ней `## описание` и обнови этот список.
 

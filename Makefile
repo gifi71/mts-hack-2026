@@ -97,6 +97,16 @@ submission: passport ## Build dist/<SURNAME>.zip with Ссылка.txt and Па�
 
 ##@ Quality
 
+PRE_COMMIT ?= pre-commit
+
+.PHONY: hooks
+hooks: ## Install the git pre-commit hooks (needs pre-commit and tofu on PATH)
+	$(PRE_COMMIT) install
+
+.PHONY: lint
+lint: ## Run every pre-commit check on all files, the same set as the CI lint job
+	$(PRE_COMMIT) run --all-files
+
 KUSTOMIZE_DIRS := gitops/platform/gateway gitops/platform/monitoring/manifests gitops/workloads/demo-app
 CRD_SCHEMAS := https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json
 
