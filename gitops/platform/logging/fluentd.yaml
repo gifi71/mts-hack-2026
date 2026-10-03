@@ -5,8 +5,9 @@ kind: DaemonSet
 
 image:
   # images/fluentd: upstream daemonset image + fluent-plugin-grafana-loki, built in CI.
+  # Pinned by digest: the tag is rebuilt by CI, the digest is what cosign signed.
   repository: ghcr.io/gifi71/mts-hack-2026/fluentd
-  tag: v1.19.3-loki1.3.0
+  tag: v1.19.3-loki1.3.0@sha256:37c932007a50eff8ffd978d281aa91241fd93ed6332ec5ba636548b72a28072c
 
 env:
   # Lets the metadata filter watch only pods on its own node.
