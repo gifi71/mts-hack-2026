@@ -22,8 +22,9 @@ kubeadm_untaint_control_plane: "{{ groups['workers'] | default([]) | length == 0
 kubeadm_audit_policy_path: /etc/kubernetes/audit-policy.yaml
 kubeadm_audit_log_dir: /var/log/kubernetes/audit
 
-# Kubelet files kube-bench expects at mode 600 (CIS 4.1.1, 4.1.9). The drop-in comes
-# from the kubeadm deb package.
+# Kubelet files kept at mode 600 (CIS 4.1.1, 4.1.9). kube-bench reads the unit file;
+# the drop-in from the kubeadm deb package carries the same settings.
 kubeadm_kubelet_restricted_files:
+  - /usr/lib/systemd/system/kubelet.service
   - /usr/lib/systemd/system/kubelet.service.d/10-kubeadm.conf
   - /var/lib/kubelet/config.yaml
