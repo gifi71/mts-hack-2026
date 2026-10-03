@@ -1,6 +1,8 @@
 ---
 - name: Install containerd
   ansible.builtin.apt:
+    # Fresh cloud images run unattended-upgrades at boot and hold the dpkg lock.
+    lock_timeout: 600
     name: "containerd={{ containerd_package_version }}"
     state: present
     update_cache: true

@@ -10,6 +10,8 @@
 
 - name: Install kubelet, kubeadm and kubectl
   ansible.builtin.apt:
+    # Fresh cloud images run unattended-upgrades at boot and hold the dpkg lock.
+    lock_timeout: 600
     name: "{{ kubernetes_packages | map('regex_replace', '$', '=' ~ kubernetes_version ~ '-' ~ kubernetes_package_revision) | list }}"
     state: present
     update_cache: true
@@ -19,6 +21,7 @@
 
 - name: Install crictl
   ansible.builtin.apt:
+    lock_timeout: 600
     name: "cri-tools={{ kubernetes_cri_tools_version }}"
     state: present
     allow_change_held_packages: true

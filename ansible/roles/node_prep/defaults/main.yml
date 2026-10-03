@@ -19,3 +19,7 @@ node_prep_sysctl:
   # Defaults are too low for a node running Prometheus, Fluentd and Argo CD.
   fs.inotify.max_user_instances: 8192
   fs.inotify.max_user_watches: 524288
+
+# Checked before the first install only (re-runs on a working node are not blocked).
+node_prep_min_memory_mb: 7000 # an "8 GB" VM reports about 7.7 GiB
+node_prep_min_root_free_gb: 15

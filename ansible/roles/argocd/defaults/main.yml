@@ -13,5 +13,5 @@ argocd_revision: "{{ gitops_revision }}"
 # Block until every Application is Synced and Healthy, so `make deploy`
 # finishes with a working platform rather than a half-synced one.
 argocd_wait_for_apps: true
-argocd_wait_retries: 90
+argocd_wait_retries: 180 # 30 min: image pulls on a slow link
 argocd_wait_delay: 10

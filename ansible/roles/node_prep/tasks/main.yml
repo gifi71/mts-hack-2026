@@ -20,8 +20,31 @@
     fail_msg: "Supported OS: Ubuntu 24.04, found {{ ansible_facts.distribution }} {{ ansible_facts.distribution_version }}"
     quiet: true
 
+- name: Check whether the node is already initialized
+  ansible.builtin.stat:
+    path: /etc/kubernetes/admin.conf
+  register: node_prep_admin_conf
+
+- name: Check memory and free disk space
+  ansible.builtin.assert:
+    that:
+      - ansible_facts.memtotal_mb >= node_prep_min_memory_mb
+      - node_prep_root_free_gb | float >= node_prep_min_root_free_gb
+    fail_msg: >-
+      Need at least {{ node_prep_min_memory_mb }} MB RAM and {{ node_prep_min_root_free_gb }} GB free on /,
+      found {{ ansible_facts.memtotal_mb }} MB and {{ node_prep_root_free_gb }} GB.
+      Ubuntu installed from the ISO with LVM uses only part of the disk for /:
+      sudo lvextend -r -l +100%FREE /dev/ubuntu-vg/ubuntu-lv
+    quiet: true
+  vars:
+    node_prep_root_free_gb: >-
+      {{ ((ansible_facts.mounts | selectattr('mount', 'equalto', '/') | first).size_available / 1024**3) | round(1) }}
+  when: not node_prep_admin_conf.stat.exists
+
 - name: Install base packages
   ansible.builtin.apt:
+    # Fresh cloud images run unattended-upgrades at boot and hold the dpkg lock.
+    lock_timeout: 600
     name: "{{ node_prep_packages }}"
     state: present
     update_cache: true
