@@ -1,0 +1,31 @@
+# API server audit policy (CIS 1.2.16-1.2.19). The first matching rule wins.
+# Records who changed what, and who read secrets; skips the high-volume noise.
+apiVersion: audit.k8s.io/v1
+kind: Policy
+omitStages:
+  - RequestReceived
+rules:
+  # Leader election and node heartbeats update leases every few seconds.
+  - level: None
+    resources:
+      - group: coordination.k8s.io
+        resources: [leases]
+  - level: None
+    resources:
+      - group: ""
+        resources: [events]
+      - group: events.k8s.io
+        resources: [events]
+  - level: None
+    nonResourceURLs: ["/healthz*", "/livez*", "/readyz*", "/version", "/metrics"]
+  # Secret and ConfigMap access without bodies, so values never reach the log.
+  - level: Metadata
+    resources:
+      - group: ""
+        resources: [secrets, configmaps]
+      - group: authentication.k8s.io
+        resources: [tokenreviews]
+  # Other reads are frequent and carry no change.
+  - level: None
+    verbs: [get, list, watch]
+  - level: Metadata

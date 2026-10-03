@@ -18,6 +18,14 @@
     dest: "{{ kubeadm_config_path }}"
     mode: "0600"
 
+# The API server reads the policy only at start; a changed policy needs a restart of the
+# kube-apiserver static pod.
+- name: Write API server audit policy
+  ansible.builtin.copy:
+    src: audit-policy.yaml
+    dest: "{{ kubeadm_audit_policy_path }}"
+    mode: "0600"
+
 - name: Initialize control plane
   ansible.builtin.command:
     cmd: kubeadm init --config {{ kubeadm_config_path }} --skip-token-print
@@ -31,6 +39,12 @@
     regexp: '^resolvConf:'
     line: "resolvConf: {{ kubeadm_kubelet_resolv_conf }}"
   notify: Restart kubelet
+
+- name: Restrict kubelet config permissions
+  ansible.builtin.file:
+    path: "{{ item }}"
+    mode: "0600"
+  loop: "{{ kubeadm_kubelet_restricted_files }}"
 
 - name: Apply kubelet changes
   ansible.builtin.meta: flush_handlers

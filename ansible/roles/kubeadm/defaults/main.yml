@@ -17,3 +17,13 @@ kubeadm_kubelet_resolv_conf: /etc/kubernetes/resolv.conf
 
 # Single node: no workers means workloads must run on the control plane.
 kubeadm_untaint_control_plane: "{{ groups['workers'] | default([]) | length == 0 }}"
+
+# API server audit log (CIS 1.2.16-1.2.19): policy file and log directory on the node.
+kubeadm_audit_policy_path: /etc/kubernetes/audit-policy.yaml
+kubeadm_audit_log_dir: /var/log/kubernetes/audit
+
+# Kubelet files kube-bench expects at mode 600 (CIS 4.1.1, 4.1.9). The drop-in comes
+# from the kubeadm deb package.
+kubeadm_kubelet_restricted_files:
+  - /usr/lib/systemd/system/kubelet.service.d/10-kubeadm.conf
+  - /var/lib/kubelet/config.yaml

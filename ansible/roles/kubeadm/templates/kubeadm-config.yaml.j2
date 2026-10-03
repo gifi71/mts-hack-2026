@@ -24,16 +24,47 @@ apiServer:
 {% for san in kubeadm_cert_sans %}
     - {{ san }}
 {% endfor %}
+  # CIS Kubernetes Benchmark 1.2.15-1.2.19, 1.2.30 (checked by kube-bench in CI).
+  extraArgs:
+    - name: profiling
+      value: "false"
+    - name: service-account-extend-token-expiration
+      value: "false"
+    - name: audit-policy-file
+      value: {{ kubeadm_audit_policy_path }}
+    - name: audit-log-path
+      value: {{ kubeadm_audit_log_dir }}/audit.log
+    - name: audit-log-maxage
+      value: "30"
+    - name: audit-log-maxbackup
+      value: "10"
+    - name: audit-log-maxsize
+      value: "100"
+  extraVolumes:
+    - name: audit-policy
+      hostPath: {{ kubeadm_audit_policy_path }}
+      mountPath: {{ kubeadm_audit_policy_path }}
+      readOnly: true
+      pathType: File
+    - name: audit-log
+      hostPath: {{ kubeadm_audit_log_dir }}
+      mountPath: {{ kubeadm_audit_log_dir }}
+      pathType: DirectoryOrCreate
 # Metrics endpoints on the node address so Prometheus can scrape the control plane.
 # controller-manager and scheduler still require authentication on these ports.
+# This is why CIS 1.3.7 and 1.4.2 (bind to 127.0.0.1) stay failed.
 controllerManager:
   extraArgs:
     - name: bind-address
       value: 0.0.0.0
+    - name: profiling
+      value: "false"
 scheduler:
   extraArgs:
     - name: bind-address
       value: 0.0.0.0
+    - name: profiling
+      value: "false"
 etcd:
   local:
     extraArgs:
