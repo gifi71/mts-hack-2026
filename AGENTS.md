@@ -70,7 +70,10 @@ make tofu-check           # fmt, validate, tofu test
 make manifests-check      # helm lint + kubeconform по всем отрендеренным манифестам
 make passport             # docs/passport/Паспорт.pdf
 make submission SURNAME=…  # dist/<SURNAME>.zip: Ссылка.txt + Паспорт.pdf для сдачи
+make lock                 # пересобрать ansible/requirements.txt (uv, хеши) после правки requirements.in
 ```
+
+Python-зависимости: правишь только `ansible/requirements.in`, потом `make lock`. `requirements.txt` руками не редактировать.
 
 `ANSIBLE_ARGS` передаётся во все цели с плейбуками: `-K` (пароль sudo), `-e gitops_revision=<ветка>` и т.п.
 

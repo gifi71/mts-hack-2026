@@ -24,8 +24,20 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Install linters
-        run: pip install -r requirements.txt ansible-lint==26.9.0 yamllint==1.38.0
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          version: "0.12.21"
+
+      - name: Lock file matches requirements.in
+        run: |
+          make lock
+          git diff --exit-code ansible/requirements.txt
+
+      # Hash mode applies to the whole pip call, so the linters (unhashed) go in a second one.
+      - name: Install Ansible and linters
+        run: |
+          pip install --require-hashes -r ansible/requirements.txt
+          pip install ansible-lint==26.9.0 yamllint==1.38.0
 
       - name: yamllint
         run: yamllint --strict .

@@ -39,15 +39,19 @@ infra-output: ## Print VM IP, inventory path and ssh command
 
 ##@ Deploy
 
-$(VENV)/.deps: requirements.txt ansible/requirements.yml
+$(VENV)/.deps: ansible/requirements.txt ansible/requirements.yml
 	python3 -m venv $(VENV)
-	$(VENV)/bin/pip install -q --upgrade pip
-	$(VENV)/bin/pip install -q -r requirements.txt
+	$(VENV)/bin/pip install -q --require-hashes -r ansible/requirements.txt
 	$(VENV)/bin/ansible-galaxy collection install -r ansible/requirements.yml -p ansible/.ansible/collections
 	touch $@
 
 .PHONY: deps
 deps: $(VENV)/.deps ## Install pinned Ansible and collections into .venv
+
+# Developer only: experts install the generated lock with plain pip.
+.PHONY: lock
+lock: ## Regenerate ansible/requirements.txt (hashes, all transitive deps) from requirements.in with uv
+	uv pip compile ansible/requirements.in --generate-hashes --universal --python-version 3.12 --quiet -o ansible/requirements.txt
 
 .PHONY: check-inventory
 check-inventory:

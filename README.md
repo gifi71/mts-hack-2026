@@ -77,10 +77,13 @@ flowchart LR
 | **Fluentd** | **1.19.3** + fluent-plugin-grafana-loki 1.3.0 | Argo CD, свой образ `ghcr.io/gifi71/mts-hack-2026/fluentd` |
 | Angie (приложение) | 1.12.2 | Argo CD, Kustomize |
 | local-path-provisioner | 0.0.37 | Argo CD |
-| ansible-core | 2.21.4 | `make deps` в `.venv` |
+| ansible-core | 2.21.4 | `make deps` в `.venv`, по хешам из [ansible/requirements.txt](ansible/requirements.txt) |
 | OpenTofu | ≥ 1.8 (проверено на 1.12.6), провайдер bpg/proxmox 0.114.0 | опционально |
 
 Версии зафиксированы: пакеты Kubernetes, чарты, образы (Angie и Fluentd по digest), коллекции Ansible, провайдеры OpenTofu.
+Python-зависимости управляющей машины зафиксированы lock-файлом с хешами: ansible-core и все его транзитивные
+зависимости ставятся через `pip install --require-hashes`. Lock генерирует uv (`make lock`), CI проверяет,
+что он совпадает с `ansible/requirements.in`. Для установки uv не нужен.
 Исключение: containerd ставится как `2.2.*` из `noble-updates` вместе с runc из Ubuntu. Ubuntu удаляет старые сборки
 из архива, и точный пин сломал бы установку после очередного обновления пакета.
 

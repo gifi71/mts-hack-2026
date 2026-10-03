@@ -1,0 +1,3 @@
+# Direct Python dependencies of the controller. Edit this file, then `make lock`
+# regenerates requirements.txt with every transitive dependency pinned by hash.
+ansible-core==2.21.4
