@@ -13,7 +13,7 @@ make deploy    # Ansible: ОС → containerd → kubeadm → Calico → Argo CD
 make verify    # smoke-тесты: Gateway API, Prometheus, логи в Loki
 ```
 
-Повторный `make deploy` ничего не меняет (`changed=0`). CI проверяет это на каждом коммите: поднимает кластер на чистом раннере `ubuntu-24.04` (около 11 минут), повторяет развёртывание и запускает `make verify`.
+Повторный `make deploy` ничего не меняет (`changed=0`). CI проверяет это на каждом коммите: поднимает кластер на чистом раннере `ubuntu-24.04` (около 13 минут), повторяет развёртывание и запускает `make verify`.
 
 ## Содержание
 
@@ -115,8 +115,11 @@ Python-зависимости управляющей машины зафикси
 **Проверено на**: Ubuntu 24.04.5 LTS (cloud image, ВМ на Proxmox, 4 vCPU, 8 ГБ RAM, 30 ГБ диска) и раннер
 GitHub Actions `ubuntu-24.04` (каждый коммит, job `e2e`).
 
-**Узел кластера**: одна ВМ **Ubuntu 24.04** amd64, 4 vCPU, 8 ГБ RAM, 30 ГБ свободного места на `/`, доступ в интернет.
-Перед установкой `make deploy` проверяет RAM и место на диске.
+**Узел кластера**: одна ВМ **Ubuntu 24.04** amd64, 4 vCPU, 8 ГБ RAM, 30 ГБ свободного места на `/`, доступ в интернет,
+без Docker: его пакет `containerd.io` конфликтует с containerd из Ubuntu, который ставит решение.
+Перед установкой `make deploy` проверяет RAM, место на диске, отсутствие Docker и то, что сеть узла
+не пересекается с подсетями подов (`10.244.0.0/16`) и сервисов (`10.96.0.0/12`). Если пересекается, задайте другие:
+`make deploy ANSIBLE_ARGS="-e k8s_pod_subnet=172.20.0.0/16 -e k8s_service_subnet=172.21.0.0/16"`.
 
 **sudo без пароля.** В cloud image Ubuntu так настроено по умолчанию. Если ВМ поставлена с ISO, есть два варианта:
 
@@ -164,6 +167,7 @@ make verify INVENTORY=ansible/inventory/localhost.yml
 git clone https://github.com/gifi71/mts-hack-2026.git && cd mts-hack-2026
 cp ansible/inventory/hosts.example.yml ansible/inventory/hosts.yml
 # в hosts.yml: ansible_host (IP ВМ), ansible_user, ansible_ssh_private_key_file
+ssh-keyscan -H <IP ВМ> >> ~/.ssh/known_hosts   # или один раз зайти по ssh: Ansible проверяет ключ хоста
 make deploy INVENTORY=ansible/inventory/hosts.yml
 make verify INVENTORY=ansible/inventory/hosts.yml
 ```
@@ -198,15 +202,15 @@ make verify
 == Cluster
 PASS  node Ready: v1.36.5
 PASS  Argo CD: 11 applications Synced/Healthy
-== Gateway API (Envoy Gateway, NodePort http://10.0.1.50:30080)
+== Gateway API (Envoy Gateway, NodePort http://<IP узла>:30080)
 PASS  Gateway edge Programmed (True)
-PASS  curl http://10.0.1.50:30080/ -> 'Hello World! (angie v1)'
+PASS  curl http://<IP узла>:30080/ -> 'Hello World! (angie v1)'
 PASS  HTTPS with the cert-manager CA -> 'Hello World! (angie v1)'
 PASS  header X-Canary: always -> v2 ('Hello World! (angie v2)')
 PASS  path /v2/ (rewritten to /) -> v2 ('Hello World! (angie v2)')
 PASS  traffic split 90/10: v2 served 9/100 requests
-PASS  curl http://10.0.1.50:30080/missing -> 404 (expected 404)
-PASS  curl http://10.0.1.50:30080/error -> 500 (expected 500)
+PASS  curl http://<IP узла>:30080/missing -> 404 (expected 404)
+PASS  curl http://<IP узла>:30080/error -> 500 (expected 500)
 == Prometheus
 PASS  target angie-v1 up (2 pods)
 PASS  target angie-v2 up (1 pods)
@@ -265,15 +269,22 @@ Gateway принимает маршруты только из перечисле
    <IP узла> app.mts-hack.local grafana.mts-hack.local prometheus.mts-hack.local argocd.mts-hack.local
    ```
    Linux и macOS: `/etc/hosts`. Windows: `C:\Windows\System32\drivers\etc\hosts`, редактор от имени администратора.
-2. Чтобы браузер доверял сертификату, импортируйте CA (`make ca-cert` сохранит `mts-hack-ca.crt`).
-   Windows: `certutil -user -addstore Root mts-hack-ca.crt`. Без этого браузер покажет предупреждение, его можно пропустить.
+   Имена `*.mts-hack.local` есть только в `hosts`, DNS для них нет.
+2. Чтобы браузер доверял сертификату, импортируйте CA. `make ca-cert` сохранит `mts-hack-ca.crt` в корень репозитория
+   на машине, где запущен `make` (в варианте 1 это ВМ). Забрать файл на Windows из PowerShell:
+   `scp <user>@<IP узла>:mts-hack-2026/mts-hack-ca.crt .`
+   - Windows (Chrome, Edge): `certutil -user -addstore Root mts-hack-ca.crt`.
+   - Firefox хранит сертификаты отдельно: Настройки → Приватность и защита → Сертификаты → Просмотр сертификатов →
+     Центры сертификации → Импорт.
+
+   Без CA браузер покажет предупреждение, его можно пропустить.
 3. Откройте:
 
    | Адрес | Что |
    |---|---|
    | `http://app.mts-hack.local:30080` | приложение (Hello World) |
    | `https://app.mts-hack.local:30443` | приложение по HTTPS |
-   | `https://grafana.mts-hack.local:30443` | Grafana, дашборд «MTS Hack: gateway, app, logs», Explore → Loki |
+   | `https://grafana.mts-hack.local:30443` | Grafana: дашборды «MTS Hack: gateway, app, logs», ArgoCD, Envoy Gateway, Explore → Loki |
    | `https://prometheus.mts-hack.local:30443` | Prometheus: `/targets`, `/alerts` |
    | `https://argocd.mts-hack.local:30443` | Argo CD |
 
