@@ -1,6 +1,7 @@
 # MTC ENGINEER HACK 2026: DevOps
 
 [![ci](https://github.com/gifi71/mts-hack-2026/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/gifi71/mts-hack-2026/actions/workflows/ci.yml)
+[![security](https://github.com/gifi71/mts-hack-2026/actions/workflows/security.yml/badge.svg?branch=main)](https://github.com/gifi71/mts-hack-2026/actions/workflows/security.yml)
 [![image-fluentd](https://github.com/gifi71/mts-hack-2026/actions/workflows/image-fluentd.yml/badge.svg?branch=main)](https://github.com/gifi71/mts-hack-2026/actions/workflows/image-fluentd.yml)
 
 Kubernetes-кластер на **kubeadm** с нуля на Ubuntu 24.04 и платформа вокруг демо-приложения:
@@ -345,15 +346,16 @@ LogQL для Grafana (Explore → Loki):
   - NetworkPolicy default-deny, разрешены только Envoy → приложение и Prometheus → метрики;
   - секреты (пароль Grafana) генерируются при установке и в репозитории не хранятся;
   - host key ВМ закреплён в `known_hosts`, `StrictHostKeyChecking` включён.
-- **Цепочка поставки**: свой образ Fluentd собирается в CI. Затем:
-  - сканируется Trivy;
-  - получает SBOM и SLSA provenance;
-  - подписывается cosign (keyless).
+- **Цепочка поставки**: свой образ Fluentd собирается в CI ([images/fluentd](images/fluentd/Dockerfile)):
+  - Debian-пакеты обновляются из snapshot.debian.org на зафиксированную дату: патчи безопасности есть, а версии пакетов при пересборке те же;
+  - до публикации образ проверяется и сканируется Trivy, исправимые HIGH и CRITICAL останавливают сборку;
+  - в ghcr.io уходит только из `main`, с SBOM и SLSA provenance, и подписывается cosign (keyless).
 
-  Образ Fluentd, его база и Angie закреплены по digest. Проверить подпись:
+  Образ Fluentd, его база и Angie закреплены по digest. Workflow `security` проверяет подпись
+  задеплоенного образа и пересканирует его на каждый push и раз в неделю. Проверить подпись вручную:
 
   ```bash
-  cosign verify ghcr.io/gifi71/mts-hack-2026/fluentd:v1.19.3-loki1.3.0 \
+  cosign verify ghcr.io/gifi71/mts-hack-2026/fluentd:v1.19.3-loki1.3.0-deb20261003 \
     --certificate-identity-regexp '^https://github.com/gifi71/mts-hack-2026/.github/workflows/image-fluentd.yml@refs/heads/main$' \
     --certificate-oidc-issuer https://token.actions.githubusercontent.com
   ```
@@ -368,9 +370,13 @@ LogQL для Grafana (Explore → Loki):
 | Workflow | Что делает |
 |---|---|
 | `ci` / lint | yamllint, ansible-lint (профиль `production`), shellcheck, `tofu fmt/validate/test`, helm lint, kubeconform по всем отрендеренным манифестам |
-| `ci` / security | gitleaks (секреты в истории), Trivy config scan (IaC, SARIF в Security) |
 | `ci` / e2e | чистый раннер `ubuntu-24.04`: `make deploy` с kubeadm, повторный `make deploy` (должен быть `changed=0`), `make verify` |
-| `image-fluentd` | сборка образа Fluentd, SBOM, provenance, Trivy, подпись cosign, публикация в ghcr.io |
+| `security` / secrets | gitleaks по всей истории git, падает на любом найденном секрете |
+| `security` / iac | Trivy config (Kubernetes, Dockerfile, OpenTofu): все находки в Security, HIGH и CRITICAL валят job |
+| `security` / image | cosign verify и Trivy задеплоенного образа Fluentd: исправимые HIGH и CRITICAL валят job на push и PR. Еженедельный запуск только обновляет Security, чтобы CVE, опубликованная после сдачи, не меняла статус коммита |
+| `image-fluentd` | сборка образа Fluentd, проверка, Trivy (гейт до публикации), push в ghcr.io с SBOM и provenance, подпись cosign |
+
+Принятые исключения сканеров с обоснованием: [.trivyignore](.trivyignore) (IaC), [images/fluentd/.trivyignore.yaml](images/fluentd/.trivyignore.yaml) (образ).
 
 CD выполняет Argo CD: после merge в `main` кластер приводится к состоянию из git.
 
