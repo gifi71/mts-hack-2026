@@ -1,5 +1,7 @@
 # MTC ENGINEER HACK 2026: DevOps
 
+![Кластер с нуля одной командой: kubeadm, Gateway API, GitOps, DevSecOps](docs/images/hero.png)
+
 [![ci](https://github.com/gifi71/mts-hack-2026/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/gifi71/mts-hack-2026/actions/workflows/ci.yml)
 [![security](https://github.com/gifi71/mts-hack-2026/actions/workflows/security.yml/badge.svg?branch=main)](https://github.com/gifi71/mts-hack-2026/actions/workflows/security.yml)
 [![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/gifi71/mts-hack-2026/badge)](https://scorecard.dev/viewer/?uri=github.com/gifi71/mts-hack-2026)
