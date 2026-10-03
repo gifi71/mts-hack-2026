@@ -1,0 +1,11 @@
+mts-hack-2026
+Copyright 2026 Pavel Dudko
+
+Licensed under the Apache License, Version 2.0 (see LICENSE).
+
+This repository includes unmodified third-party material under its own license:
+
+- gitops/platform/envoy-gateway/charts/: Helm charts gateway-helm and gateway-crds-helm v1.9.2
+  of Envoy Gateway, Copyright The Envoy Gateway Authors, Apache License 2.0.
+- gitops/platform/monitoring/manifests/dashboards/: Grafana dashboards of Argo CD
+  (Apache License 2.0), Envoy Gateway (Apache License 2.0) and Sloth (Apache License 2.0).
