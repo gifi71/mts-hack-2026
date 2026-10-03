@@ -387,7 +387,7 @@ LogQL для Grafana (Explore → Loki):
     PolicyReport по каждому поду кластера: `kubectl get policyreport -A`;
   - **CIS Kubernetes Benchmark**: control plane настроен по CIS (profiling выключен, audit log API server с политикой
     [audit-policy.yaml](ansible/roles/kubeadm/files/audit-policy.yaml), права 600 на файлы kubelet). kube-bench проверяет
-    узел в e2e и через `make cis`: 72 PASS, 4 принятых исключения с причинами в [tests/cis/kube-bench.sh](tests/cis/kube-bench.sh);
+    узел в e2e и через `make cis`: 73 PASS и 0 FAIL, 4 принятых исключения с причинами в [tests/cis/kube-bench.sh](tests/cis/kube-bench.sh);
   - **Kubescape**: наши манифесты соответствуют NSA hardening guide и MITRE ATT&CK на 100% (`make kubescape`).
 - **Цепочка поставки**: свой образ Fluentd собирается в CI ([images/fluentd](images/fluentd/Dockerfile)):
   - Debian-пакеты обновляются из snapshot.debian.org на зафиксированную дату: патчи безопасности есть, а версии пакетов при пересборке те же;
