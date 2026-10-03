@@ -366,7 +366,7 @@ LogQL для Grafana (Explore → Loki):
   задеплоенного образа и пересканирует его на каждый push и раз в неделю. Проверить подпись вручную:
 
   ```bash
-  cosign verify ghcr.io/gifi71/mts-hack-2026/fluentd:v1.19.3-loki1.3.0-deb20261003 \
+  cosign verify ghcr.io/gifi71/mts-hack-2026/fluentd:v1.19.3-loki1.3.0-deb20261003-a92b22c \
     --certificate-identity-regexp '^https://github.com/gifi71/mts-hack-2026/.github/workflows/image-fluentd.yml@refs/heads/main$' \
     --certificate-oidc-issuer https://token.actions.githubusercontent.com
   ```
