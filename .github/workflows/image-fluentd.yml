@@ -17,7 +17,7 @@ permissions:
 
 env:
   IMAGE: ghcr.io/${{ github.repository }}/fluentd
-  # Fluentd and Loki plugin versions; the Debian snapshot date from the Dockerfile is appended.
+  # Fluentd and Loki plugin versions; the Debian snapshot date and the build context hash are appended.
   TAG_PREFIX: v1.19.3-loki1.3.0
 
 jobs:
@@ -35,7 +35,9 @@ jobs:
         run: |
           snapshot=$(sed -n 's/^ARG DEBIAN_SNAPSHOT=\([0-9]\{8\}\).*/\1/p' images/fluentd/Dockerfile)
           test -n "$snapshot"
-          echo "tag=${TAG_PREFIX}-deb${snapshot}" >> "$GITHUB_OUTPUT"
+          # Git tree hash of the build context: same inputs, same tag; any change, new tag.
+          context=$(git rev-parse --short=7 HEAD:images/fluentd)
+          echo "tag=${TAG_PREFIX}-deb${snapshot}-${context}" >> "$GITHUB_OUTPUT"
 
       - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4
 
