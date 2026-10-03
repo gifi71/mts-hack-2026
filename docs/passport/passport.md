@@ -1,6 +1,11 @@
-# Паспорт решения. MTC ENGINEER HACK 2026, кейс DevOps
+<header class="masthead">
+<div>
+<h1>Паспорт решения</h1>
+<p class="role">MTC ENGINEER HACK 2026 · кейс DevOps</p>
+</div>
+<p class="meta">github.com/gifi71/mts-hack-2026<br>ветка main<br>автор: Павел Дудко</p>
+</header>
 
-Репозиторий: https://github.com/gifi71/mts-hack-2026 (ветка `main`)
 
 ## 1. Архитектура и состав решения
 
@@ -65,3 +70,8 @@
   - мульти-кластер по площадкам (Argo CD ApplicationSet).
 - **Kubernetes 1.37** и containerd 2.3 LTS, когда Argo CD, cert-manager и Envoy Gateway добавят 1.37 в свои матрицы (на 2 октября её поддерживает только Calico 3.33). У containerd 2.2 upstream-поддержка заканчивается 6 ноября 2026.
 - **VictoriaLogs** вместо Loki при больших объёмах логов.
+
+<footer class="footer">
+<span class="links">github.com/gifi71/mts-hack-2026 · make deploy · make verify</span>
+<span class="wordmark">PWND<span>.</span>DAY</span>
+</footer>

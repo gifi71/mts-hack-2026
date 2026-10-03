@@ -7,5 +7,7 @@ This repository includes unmodified third-party material under its own license:
 
 - gitops/platform/envoy-gateway/charts/: Helm charts gateway-helm and gateway-crds-helm v1.9.2
   of Envoy Gateway, Copyright The Envoy Gateway Authors, Apache License 2.0.
+- docs/passport/fonts/: IBM Plex Sans and IBM Plex Mono (woff2 subsets from @fontsource 5.3.0),
+  Copyright IBM Corp., SIL Open Font License 1.1 (docs/passport/fonts/OFL.txt).
 - gitops/platform/monitoring/manifests/dashboards/: Grafana dashboards of Argo CD
   (Apache License 2.0), Envoy Gateway (Apache License 2.0) and Sloth (Apache License 2.0).
