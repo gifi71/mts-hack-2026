@@ -10,6 +10,9 @@ INVENTORY ?= $(firstword $(wildcard ansible/inventory/generated/proxmox.yml ansi
 ANSIBLE_ARGS ?=
 
 export ANSIBLE_CONFIG := ansible/ansible.cfg
+# A broken inventory must fail the run, not match no hosts and exit 0. Set here, not in ansible.cfg:
+# ansible-lint runs syntax checks against the default inventory, which exists only after make infra-up.
+export ANSIBLE_INVENTORY_UNPARSED_FAILED := True
 
 .PHONY: help
 help: ## Show available targets
