@@ -446,7 +446,7 @@ Scorecard для репозитория одного автора без рел�
 автор один), Fuzzing (нечего фаззить), CII-Best-Practices и Signed-Releases. Эти алерты видны во вкладке Security;
 что из них включается после сдачи, записано в [TODO.md](TODO.md).
 
-Принятые исключения сканеров с обоснованием: [.trivyignore](.trivyignore) (IaC), [images/fluentd/.trivyignore.yaml](images/fluentd/.trivyignore.yaml) (образ).
+Принятые исключения сканеров с обоснованием: [.trivyignore.yaml](.trivyignore.yaml) (IaC), [images/fluentd/.trivyignore.yaml](images/fluentd/.trivyignore.yaml) (образ).
 
 Те же проверки, что в `ci` / lint, запускаются локально перед каждым коммитом:
 `make hooks` ставит git-хуки, `make lint` прогоняет их по всему репозиторию. Нужны `pre-commit` (`pipx install pre-commit` или `uvx pre-commit`) и `tofu`.

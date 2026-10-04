@@ -46,7 +46,7 @@ jobs:
           scan-type: config
           scan-ref: .
           skip-dirs: gitops/platform/envoy-gateway/charts
-          trivyignores: .trivyignore
+          trivyignores: .trivyignore.yaml
           format: sarif
           output: trivy-config.sarif
 
@@ -63,7 +63,7 @@ jobs:
           scan-type: config
           scan-ref: .
           skip-dirs: gitops/platform/envoy-gateway/charts
-          trivyignores: .trivyignore
+          trivyignores: .trivyignore.yaml
           severity: HIGH,CRITICAL
           format: table
           exit-code: "1"

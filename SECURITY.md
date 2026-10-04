@@ -20,5 +20,5 @@
 - подпись образа Fluentd: ставится в CI (cosign keyless), проверяется в кластере (Kyverno);
 - безопасность самого репозитория (OpenSSF Scorecard).
 
-Принятые исключения сканеров с обоснованием: [.trivyignore](.trivyignore),
+Принятые исключения сканеров с обоснованием: [.trivyignore.yaml](.trivyignore.yaml),
 [images/fluentd/.trivyignore.yaml](images/fluentd/.trivyignore.yaml), [tests/cis/kube-bench.sh](tests/cis/kube-bench.sh).

@@ -1,0 +1,9 @@
+# Accepted IaC findings (Trivy config). Each entry needs a statement and is scoped to its paths.
+misconfigurations:
+  - id: DS-0002
+    paths:
+      - images/fluentd/Dockerfile
+    statement: >-
+      The Fluentd DaemonSet runs as root on purpose. It tails /var/log/containers and keeps
+      position files on the node; the upstream fluentd-kubernetes-daemonset image runs as root
+      as well. Scoped to the logging namespace.

@@ -1,6 +1,0 @@
-# Accepted findings. Each entry needs a reason.
-
-# DS-0002 (images/fluentd/Dockerfile): the Fluentd DaemonSet runs as root on purpose.
-# It tails /var/log/containers and keeps position files on the node; the upstream
-# fluentd-kubernetes-daemonset image runs as root as well. Scoped to the logging namespace.
-DS-0002
