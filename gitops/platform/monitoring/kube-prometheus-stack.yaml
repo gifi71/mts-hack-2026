@@ -50,6 +50,9 @@ grafana:
       reporting_enabled: false
       check_for_updates: false
       check_for_plugin_updates: false
+    dashboards:
+      # The sidecar writes ConfigMap keys to /tmp/dashboards: open the solution overview first.
+      default_home_dashboard_path: /tmp/dashboards/mts-hack-overview.json
   sidecar:
     dashboards:
       enabled: true
