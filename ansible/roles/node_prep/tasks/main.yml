@@ -17,7 +17,10 @@
     that:
       - ansible_facts.distribution == "Ubuntu"
       - ansible_facts.distribution_version is version("24.04", ">=")
-    fail_msg: "Supported OS: Ubuntu 24.04, found {{ ansible_facts.distribution }} {{ ansible_facts.distribution_version }}"
+      - ansible_facts.architecture == "x86_64"
+    fail_msg: >-
+      Supported: Ubuntu 24.04 on amd64 (Helm, kube-bench and the Fluentd image are amd64 only),
+      found {{ ansible_facts.distribution }} {{ ansible_facts.distribution_version }} {{ ansible_facts.architecture }}
     quiet: true
 
 - name: Check whether the node is already initialized
