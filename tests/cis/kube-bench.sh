@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # CIS Kubernetes Benchmark for this node with kube-bench. Run as root on the node:
-# CI e2e runs it after make verify, `make cis` runs it over SSH. Any FAIL except the
-# accepted ones below exits 1. The report is saved to ./kube-bench.txt.
+# CI e2e runs it after make verify, `make cis` runs it over SSH, or locally for a localhost
+# inventory. Any FAIL except the accepted ones below exits 1. The report is saved to ./kube-bench.txt.
 set -euo pipefail
 
 version=0.16.0
