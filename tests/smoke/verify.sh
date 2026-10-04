@@ -172,7 +172,8 @@ section "Logging (Fluentd -> Loki)"
 curl -fsS --max-time 5 -o /dev/null "${HTTP_URL}/?marker=${MARKER}" || true
 curl -s --max-time 5 -o /dev/null "${HTTP_URL}/missing?marker=${MARKER}" || true
 
-found=$(loki_find "{namespace=\"demo\", stream=\"stdout\"} |= \"${MARKER}\"")
+# app="angie" is the label the Grafana dashboard filters on.
+found=$(loki_find "{namespace=\"demo\", app=\"angie\", stream=\"stdout\"} |= \"${MARKER}\"")
 if [[ -n "$found" ]]; then
   pass "access log (stdout) for ?marker=${MARKER} found in Loki:"
   echo "      ${found}"

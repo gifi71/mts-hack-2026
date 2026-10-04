@@ -67,9 +67,6 @@ fileConfigs:
         skip_container_metadata true
         skip_namespace_metadata true
         skip_master_url true
-        # app.kubernetes.io/name -> app_kubernetes_io_name, addressable from the Loki labels.
-        de_dot true
-        de_slash true
       </filter>
 
       # Demo app access log is JSON: lift its fields (status, uri, request_time...) into the record.
@@ -129,7 +126,8 @@ fileConfigs:
           namespace $.kubernetes.namespace_name
           pod $.kubernetes.pod_name
           container $.kubernetes.container_name
-          app $.kubernetes.labels.app_kubernetes_io_name
+          # Bracket form: the key keeps its dots and slash, kubernetes_metadata 3.8 has no de_dot option.
+          app $["kubernetes"]["labels"]["app.kubernetes.io/name"]
           stream $.stream
         </label>
         <buffer>
