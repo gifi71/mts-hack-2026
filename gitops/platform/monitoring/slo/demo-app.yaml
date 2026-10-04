@@ -14,13 +14,17 @@ spec:
   slos:
     - name: availability
       objective: 99.0
-      description: Demo app responses that are not 5xx, measured by Angie.
+      description: Requests through Gateway edge to the demo app answered without 5xx, measured by Envoy.
       sli:
         events:
-          errorQuery: sum(rate(angie_http_server_zones_responses{zone="demo", code=~"5.."}[{{.window}}]))
+          # Measured at the gateway, not in Angie: Angie also counts kubelet probes (about 1 rps),
+          # which would dilute real errors. The 5xx series appears only after the first 5xx.
+          errorQuery: |
+            sum(rate(envoy_cluster_upstream_rq_xx{envoy_cluster_name=~"httproute/demo/.*", envoy_response_code_class="5"}[{{.window}}]))
+            or vector(0)
           # No traffic in a window gives 0/0 = NaN, and one NaN sample spoils the 30-day
           # sum_over_time. With no requests the total falls back to 1, so the error ratio is 0.
-          totalQuery: (sum(rate(angie_http_server_zones_responses{zone="demo"}[{{.window}}])) > 0) or vector(1)
+          totalQuery: (sum(rate(envoy_cluster_upstream_rq_total{envoy_cluster_name=~"httproute/demo/.*"}[{{.window}}])) > 0) or vector(1)
       alerting:
         name: DemoAppAvailabilitySLO
         annotations:

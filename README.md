@@ -346,8 +346,12 @@ q 'sum by (envoy_cluster_name) (rate(envoy_cluster_upstream_rq_total[5m]))'
 
 | SLO | Цель | SLI |
 |---|---|---|
-| availability | 99% за 30 дней | доля ответов приложения не 5xx (метрики Angie) |
+| availability | 99% за 30 дней | доля запросов через Gateway к приложению без 5xx (метрики Envoy) |
 | latency | 99% за 30 дней | доля запросов через Gateway быстрее 250 мс (гистограмма Envoy) |
+
+Обе SLI считаются на Gateway: счётчики самого Angie включают пробы kubelet (около 1 rps) и размывают ошибки.
+Окно SLO 30 дней, а Prometheus хранит 3 дня, поэтому 30-дневные SLI и остаток бюджета на стенде считаются
+не больше чем за 3 дня. Без трафика в окне ошибка SLI равна 0, а не NaN.
 
 `make slo` генерирует из неё PrometheusRule с recording rules и multi-window multi-burn-rate алертами
 (page: 14.4x за 5 мин/1 ч и 6x за 30 мин/6 ч; ticket: 3x за 2 ч/1 день и 1x за 6 ч/3 дня). CI падает, если сгенерированный файл разошёлся со спецификацией.
