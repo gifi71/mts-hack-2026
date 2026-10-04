@@ -18,7 +18,7 @@ spec:
     - expr: |
         (sum(rate(angie_http_server_zones_responses{zone="demo", code=~"5.."}[5m])))
         /
-        (sum(rate(angie_http_server_zones_responses{zone="demo"}[5m])))
+        ((sum(rate(angie_http_server_zones_responses{zone="demo"}[5m])) > 0) or vector(1))
       labels:
         owner: platform
         sloth_id: demo-app-availability
@@ -29,7 +29,7 @@ spec:
     - expr: |
         (sum(rate(angie_http_server_zones_responses{zone="demo", code=~"5.."}[30m])))
         /
-        (sum(rate(angie_http_server_zones_responses{zone="demo"}[30m])))
+        ((sum(rate(angie_http_server_zones_responses{zone="demo"}[30m])) > 0) or vector(1))
       labels:
         owner: platform
         sloth_id: demo-app-availability
@@ -40,7 +40,7 @@ spec:
     - expr: |
         (sum(rate(angie_http_server_zones_responses{zone="demo", code=~"5.."}[1h])))
         /
-        (sum(rate(angie_http_server_zones_responses{zone="demo"}[1h])))
+        ((sum(rate(angie_http_server_zones_responses{zone="demo"}[1h])) > 0) or vector(1))
       labels:
         owner: platform
         sloth_id: demo-app-availability
@@ -51,7 +51,7 @@ spec:
     - expr: |
         (sum(rate(angie_http_server_zones_responses{zone="demo", code=~"5.."}[2h])))
         /
-        (sum(rate(angie_http_server_zones_responses{zone="demo"}[2h])))
+        ((sum(rate(angie_http_server_zones_responses{zone="demo"}[2h])) > 0) or vector(1))
       labels:
         owner: platform
         sloth_id: demo-app-availability
@@ -62,7 +62,7 @@ spec:
     - expr: |
         (sum(rate(angie_http_server_zones_responses{zone="demo", code=~"5.."}[6h])))
         /
-        (sum(rate(angie_http_server_zones_responses{zone="demo"}[6h])))
+        ((sum(rate(angie_http_server_zones_responses{zone="demo"}[6h])) > 0) or vector(1))
       labels:
         owner: platform
         sloth_id: demo-app-availability
@@ -73,7 +73,7 @@ spec:
     - expr: |
         (sum(rate(angie_http_server_zones_responses{zone="demo", code=~"5.."}[1d])))
         /
-        (sum(rate(angie_http_server_zones_responses{zone="demo"}[1d])))
+        ((sum(rate(angie_http_server_zones_responses{zone="demo"}[1d])) > 0) or vector(1))
       labels:
         owner: platform
         sloth_id: demo-app-availability
@@ -84,7 +84,7 @@ spec:
     - expr: |
         (sum(rate(angie_http_server_zones_responses{zone="demo", code=~"5.."}[3d])))
         /
-        (sum(rate(angie_http_server_zones_responses{zone="demo"}[3d])))
+        ((sum(rate(angie_http_server_zones_responses{zone="demo"}[3d])) > 0) or vector(1))
       labels:
         owner: platform
         sloth_id: demo-app-availability
@@ -215,7 +215,7 @@ spec:
         sum(rate(envoy_cluster_upstream_rq_time_bucket{envoy_cluster_name=~"httproute/demo/.*", le="250.0"}[5m]))
         )
         /
-        (sum(rate(envoy_cluster_upstream_rq_time_count{envoy_cluster_name=~"httproute/demo/.*"}[5m])))
+        ((sum(rate(envoy_cluster_upstream_rq_time_count{envoy_cluster_name=~"httproute/demo/.*"}[5m])) > 0) or vector(1))
       labels:
         owner: platform
         sloth_id: demo-app-latency
@@ -229,7 +229,7 @@ spec:
         sum(rate(envoy_cluster_upstream_rq_time_bucket{envoy_cluster_name=~"httproute/demo/.*", le="250.0"}[30m]))
         )
         /
-        (sum(rate(envoy_cluster_upstream_rq_time_count{envoy_cluster_name=~"httproute/demo/.*"}[30m])))
+        ((sum(rate(envoy_cluster_upstream_rq_time_count{envoy_cluster_name=~"httproute/demo/.*"}[30m])) > 0) or vector(1))
       labels:
         owner: platform
         sloth_id: demo-app-latency
@@ -243,7 +243,7 @@ spec:
         sum(rate(envoy_cluster_upstream_rq_time_bucket{envoy_cluster_name=~"httproute/demo/.*", le="250.0"}[1h]))
         )
         /
-        (sum(rate(envoy_cluster_upstream_rq_time_count{envoy_cluster_name=~"httproute/demo/.*"}[1h])))
+        ((sum(rate(envoy_cluster_upstream_rq_time_count{envoy_cluster_name=~"httproute/demo/.*"}[1h])) > 0) or vector(1))
       labels:
         owner: platform
         sloth_id: demo-app-latency
@@ -257,7 +257,7 @@ spec:
         sum(rate(envoy_cluster_upstream_rq_time_bucket{envoy_cluster_name=~"httproute/demo/.*", le="250.0"}[2h]))
         )
         /
-        (sum(rate(envoy_cluster_upstream_rq_time_count{envoy_cluster_name=~"httproute/demo/.*"}[2h])))
+        ((sum(rate(envoy_cluster_upstream_rq_time_count{envoy_cluster_name=~"httproute/demo/.*"}[2h])) > 0) or vector(1))
       labels:
         owner: platform
         sloth_id: demo-app-latency
@@ -271,7 +271,7 @@ spec:
         sum(rate(envoy_cluster_upstream_rq_time_bucket{envoy_cluster_name=~"httproute/demo/.*", le="250.0"}[6h]))
         )
         /
-        (sum(rate(envoy_cluster_upstream_rq_time_count{envoy_cluster_name=~"httproute/demo/.*"}[6h])))
+        ((sum(rate(envoy_cluster_upstream_rq_time_count{envoy_cluster_name=~"httproute/demo/.*"}[6h])) > 0) or vector(1))
       labels:
         owner: platform
         sloth_id: demo-app-latency
@@ -285,7 +285,7 @@ spec:
         sum(rate(envoy_cluster_upstream_rq_time_bucket{envoy_cluster_name=~"httproute/demo/.*", le="250.0"}[1d]))
         )
         /
-        (sum(rate(envoy_cluster_upstream_rq_time_count{envoy_cluster_name=~"httproute/demo/.*"}[1d])))
+        ((sum(rate(envoy_cluster_upstream_rq_time_count{envoy_cluster_name=~"httproute/demo/.*"}[1d])) > 0) or vector(1))
       labels:
         owner: platform
         sloth_id: demo-app-latency
@@ -299,7 +299,7 @@ spec:
         sum(rate(envoy_cluster_upstream_rq_time_bucket{envoy_cluster_name=~"httproute/demo/.*", le="250.0"}[3d]))
         )
         /
-        (sum(rate(envoy_cluster_upstream_rq_time_count{envoy_cluster_name=~"httproute/demo/.*"}[3d])))
+        ((sum(rate(envoy_cluster_upstream_rq_time_count{envoy_cluster_name=~"httproute/demo/.*"}[3d])) > 0) or vector(1))
       labels:
         owner: platform
         sloth_id: demo-app-latency
