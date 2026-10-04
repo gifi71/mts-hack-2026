@@ -17,8 +17,10 @@ on:
 permissions:
   contents: read
 
+# Every commit on main gets its own run: a cancelled run would turn the README badge red.
+# Pull requests keep only the newest run.
 concurrency:
-  group: ci-${{ github.ref }}
+  group: ci-${{ github.event_name == 'pull_request' && github.ref || github.sha }}
   cancel-in-progress: true
 
 jobs:
