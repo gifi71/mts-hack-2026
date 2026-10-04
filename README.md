@@ -11,16 +11,19 @@
   <a href="https://scorecard.dev/viewer/?uri=github.com/gifi71/mts-hack-2026"><img src="https://api.scorecard.dev/projects/github.com/gifi71/mts-hack-2026/badge" alt="OpenSSF Scorecard"></a>
 </p>
 
-Kubernetes-кластер на **kubeadm** с нуля на Ubuntu 24.04 и платформа вокруг демо-приложения:
-публикация через **Gateway API** (Envoy Gateway), метрики в **Prometheus**, логи через **Fluentd** в Loki.
+Kubernetes-кластер на kubeadm с нуля на Ubuntu 24.04 и платформа вокруг демо-приложения:
+публикация через Gateway API (Envoy Gateway), метрики в Prometheus, логи через Fluentd в Loki.
 Всё ставится одной командой и проверяется второй:
 
 ```bash
 make deploy    # Ansible: ОС → containerd → kubeadm → Calico → Argo CD → вся платформа через GitOps
-make verify    # smoke-тесты: Gateway API, Prometheus, логи в Loki
+make verify    # smoke-тесты: Gateway API, Prometheus, SLO, Kyverno, логи в Loki
 ```
 
-Повторный `make deploy` ничего не меняет (`changed=0`). CI проверяет это на каждом коммите с кодом: поднимает кластер на чистом раннере `ubuntu-24.04` (10-15 минут), повторяет развёртывание и запускает `make verify`.
+На самой ВМ сначала `export INVENTORY=ansible/inventory/localhost.yml` (см. [Развёртывание](#развёртывание)).
+Нужна ВМ Ubuntu 24.04 amd64: 4 vCPU, 8 ГБ RAM (рекомендуется 16 ГБ), 30 ГБ диска.
+
+Повторный `make deploy` ничего не меняет (`changed=0`). CI проверяет это на каждом коммите с кодом: поднимает кластер на чистом раннере `ubuntu-24.04` (10-15 минут на раннере GitHub), повторяет развёртывание и запускает `make verify`.
 
 ## Содержание
 
@@ -74,17 +77,17 @@ flowchart LR
 | Компонент | Версия | Как ставится |
 |---|---|---|
 | Ubuntu | 24.04.5 LTS | ВМ (OpenTofu или вручную) |
-| **Kubernetes** | **1.36.5** | kubeadm, kubelet, kubectl из `pkgs.k8s.io` |
+| Kubernetes | 1.36.5 | kubeadm, kubelet, kubectl из `pkgs.k8s.io` |
 | containerd / runc | 2.2.1 / 1.3.4 | пакеты Ubuntu `noble-updates` |
 | Calico (CNI) | 3.32.2 | tigera-operator, Helm (Ansible), VXLAN |
 | Helm | 3.22.0 | Ansible, бинарник с проверкой sha256 |
 | Argo CD | 3.5.3 (чарт 10.9.6) | Helm (Ansible) |
-| **Gateway API** | **1.6.1, standard channel** | чарт `gateway-crds-helm` v1.9.2 |
-| **Envoy Gateway** | **1.9.2** (Envoy 1.39.1) | Argo CD, чарт завендорен в репозиторий |
+| Gateway API | 1.6.1, standard channel | чарт `gateway-crds-helm` v1.9.2 |
+| Envoy Gateway | 1.9.2 (Envoy 1.39.1) | Argo CD, чарт завендорен в репозиторий |
 | cert-manager | 1.21.2 | Argo CD |
 | kube-prometheus-stack | 91.8.2: Prometheus 3.15.0, Operator 0.94.1, Grafana 13.2.3, Alertmanager 0.34.1 | Argo CD |
 | Loki | 3.7.8 (чарт 18.13.7, monolithic) | Argo CD |
-| **Fluentd** | **1.19.3** + fluent-plugin-grafana-loki 1.3.0 | Argo CD, свой образ `ghcr.io/gifi71/mts-hack-2026/fluentd` |
+| Fluentd | 1.19.3 + fluent-plugin-grafana-loki 1.3.0 (чарт 0.6.0) | Argo CD, свой образ `ghcr.io/gifi71/mts-hack-2026/fluentd` |
 | Angie (приложение) | 1.12.2 | Argo CD, Kustomize |
 | local-path-provisioner | 0.0.37 | Argo CD |
 | Kyverno | 1.19.1 (чарт 3.9.1) | Argo CD, политики в [gitops/platform/kyverno/policies](gitops/platform/kyverno/policies) |
@@ -93,17 +96,17 @@ flowchart LR
 | OpenTofu | ≥ 1.8 (проверено на 1.12.6), провайдер bpg/proxmox 0.114.0 | опционально |
 
 Версии зафиксированы: пакеты Kubernetes, чарты, образы (Angie и Fluentd по digest), коллекции Ansible, провайдеры OpenTofu.
-Python-зависимости управляющей машины зафиксированы lock-файлом с хешами: ansible-core и все его транзитивные
-зависимости ставятся через `pip install --require-hashes`. Lock генерирует uv (`make lock`), CI проверяет,
-что он совпадает с `ansible/requirements.in`. Для установки uv не нужен. Так же по хешам ставятся Python-инструменты
-CI ([.github/ci-requirements.txt](.github/ci-requirements.txt)), а бинарники, которые CI скачивает напрямую (kubeconform, Kubescape, Sloth, kube-bench), проверяются по sha256.
+Python-зависимости ставятся по хешам из lock-файлов (`pip install --require-hashes`), бинарники CI проверяются по sha256.
 Исключение: containerd ставится как `2.2.*` из `noble-updates` вместе с runc из Ubuntu. Ubuntu удаляет старые сборки
 из архива, и точный пин сломал бы установку после очередного обновления пакета.
 
 ### Совместимость
 
-Версия Kubernetes выбрана как последняя минорная, которую официально поддерживают все компоненты.
-Сверено с матрицами проектов на 2 октября 2026.
+Kubernetes 1.36.5: последняя минорная версия, которую официально поддерживают все компоненты (матрицы на 2 октября 2026).
+Версия задаётся одной переменной `k8s_version` в [ansible/group_vars/all/main.yml](ansible/group_vars/all/main.yml).
+
+<details>
+<summary>Матрица совместимости и что сознательно не обновлено</summary>
 
 | Компонент | Версия | Поддерживаемые Kubernetes | 1.37 |
 |---|---|---|---|
@@ -115,15 +118,15 @@ CI ([.github/ci-requirements.txt](.github/ci-requirements.txt)), а бинарн
 | containerd | 2.2.1 (Ubuntu 24.04) | 1.36 требует 2.2+ ([RELEASES.md](https://github.com/containerd/containerd/blob/main/RELEASES.md#kubernetes-support)) | нужен 2.3+ |
 
 Kyverno 1.19.1 официально заявляет Kubernetes 1.33-1.35, версии под 1.36 ещё нет. На 1.36 его проверяет наш e2e:
-`make verify` убеждается, что подписанный образ допускается, а неподписанный отклоняется.
+подписанный образ допускается всегда, отказ неподписанному проверяется, когда узел достаёт Sigstore (иначе `WARN`).
 
-Поэтому **Kubernetes 1.36.5**, хотя уже вышла 1.37.1. Сознательно не обновлены:
+Поэтому Kubernetes 1.36.5, хотя уже вышла 1.37.1. Сознательно не обновлены:
 
 - Calico 3.33.0: вышел 1 октября, первый релиз ветки, для 1.36 ничего не добавляет;
 - Gateway API 1.6.2: Envoy Gateway 1.9.2 поставляется и тестируется с 1.6.1;
 - Fluentd 1.19.4: для него ещё нет образа `fluent/fluentd-kubernetes-daemonset`, на котором построен наш образ.
 
-Версия Kubernetes задаётся одной переменной `k8s_version` в [ansible/group_vars/all/main.yml](ansible/group_vars/all/main.yml).
+</details>
 
 ## Требования
 
@@ -131,7 +134,7 @@ Kyverno 1.19.1 официально заявляет Kubernetes 1.33-1.35, ве�
 та же ВМ с 16 ГБ после повышения лимитов памяти подов (2026-10-04) и раннер GitHub Actions `ubuntu-24.04`
 (каждый коммит, job `e2e`). Requests подов в сумме около 4 ГБ, поэтому платформа помещается и на 8 ГБ.
 
-**Узел кластера**: одна ВМ **Ubuntu 24.04** amd64, 4 vCPU, 8 ГБ RAM (рекомендуется 16 ГБ), 30 ГБ свободного места на `/` (preflight требует не меньше 15 ГБ),
+**Узел кластера**: одна ВМ Ubuntu 24.04 amd64, 4 vCPU, 8 ГБ RAM (рекомендуется 16 ГБ), 30 ГБ диска (preflight требует 15 ГБ свободного на `/`),
 доступ в интернет, без Docker: его пакет `containerd.io` конфликтует с containerd из Ubuntu, который ставит решение.
 Перед установкой `make deploy` проверяет RAM, место на диске, отсутствие Docker и то, что сеть узла
 не пересекается с подсетями подов (`10.244.0.0/16`) и сервисов (`10.96.0.0/12`). Если пересекается, задайте другие:
@@ -171,10 +174,12 @@ Ansible и коллекции `make deploy` ставит сам в `.venv`, их
 
 ```bash
 git clone https://github.com/gifi71/mts-hack-2026.git && cd mts-hack-2026
-make deploy INVENTORY=ansible/inventory/localhost.yml   # 15-20 минут, в основном скачивание образов
-make verify INVENTORY=ansible/inventory/localhost.yml
+export INVENTORY=ansible/inventory/localhost.yml
+make deploy    # 15-20 минут на ВМ, в основном скачивание образов
+make verify
 ```
 
+С этим `INVENTORY` без аргумента работают и `make ca-cert`, `make credentials`, `make cis`.
 Этот же сценарий выполняет CI на чистом раннере `ubuntu-24.04`.
 
 ### Вариант 2. С рабочей машины по SSH
@@ -213,8 +218,10 @@ make verify
 
 `make verify` выполняет все проверки ниже на узле и печатает `PASS/FAIL` по каждой. Код выхода зависит только от FAIL.
 Проверки Kyverno, которым нужны `ghcr.io` и Sigstore (Rekor, TUF), при недоступности этих сервисов печатают `WARN`:
-дополнительная часть не делает красной проверку обязательной.
-Пример вывода со стенда автора:
+проверки дополнительной части не валят обязательную.
+
+<details>
+<summary>Пример вывода make verify</summary>
 
 ```
 == Cluster
@@ -254,6 +261,8 @@ PASS  error log (stderr) for /missing?marker=verify-1791100484-6750 found in Lok
 All checks passed.
 ```
 
+</details>
+
 Ниже то же самое руками. Команды `kubectl` выполняются на узле (`make ssh`).
 
 ### Приложение и Gateway API
@@ -289,7 +298,7 @@ for i in $(seq 100); do curl -s -H 'Host: app.mts-hack.local' http://$NODE:30080
 | `HTTPRoute https-redirect` | HTTP → HTTPS (301) для Grafana, Prometheus, Argo CD |
 | `HTTPRoute grafana / prometheus / argocd` | UI платформы по HTTPS |
 
-Gateway принимает маршруты только из перечисленных namespace (`allowedRoutes` с селектором).
+Gateway принимает маршруты только из namespace `demo`, `monitoring`, `argocd`, `envoy-gateway-system` (`allowedRoutes` с селектором).
 
 **UI в браузере.**
 
@@ -353,9 +362,7 @@ q 'sum by (envoy_cluster_name) (rate(envoy_cluster_upstream_rq_total[5m]))'
 | availability | 99% за 30 дней | доля запросов через Gateway к приложению без 5xx (метрики Envoy) |
 | latency | 99% за 30 дней | доля запросов через Gateway быстрее 250 мс (гистограмма Envoy) |
 
-Обе SLI считаются на Gateway: счётчики самого Angie включают пробы kubelet (около 1 rps) и размывают ошибки.
-Окно SLO 30 дней, а Prometheus хранит 3 дня, поэтому 30-дневные SLI и остаток бюджета на стенде считаются
-не больше чем за 3 дня. Без трафика в окне ошибка SLI равна 0, а не NaN.
+SLI считаются на Gateway, окно 30 дней при хранении 3 дня фактически не длиннее 3 дней: причины в [ADR-09](docs/adr/09-monitoring-prometheus-slo.md).
 
 `make slo` генерирует из неё PrometheusRule с recording rules и multi-window multi-burn-rate алертами
 (page: 14.4x за 5 мин/1 ч и 6x за 30 мин/6 ч; ticket: 3x за 2 ч/1 день и 1x за 6 ч/3 дня). CI падает, если сгенерированный файл разошёлся со спецификацией.
@@ -378,9 +385,11 @@ q 'sum by (envoy_cluster_name) (rate(envoy_cluster_upstream_rq_total[5m]))'
 Loki хранит логи 3 дня, как и Prometheus. Смотреть логи: Grafana → Explore → Loki, или через API на узле:
 
 ```bash
+NODE=localhost   # на узле; с клиента подставьте IP узла
 curl -s "http://$NODE:30080/?marker=check-123" >/dev/null
 sleep 10
 kubectl get --raw '/api/v1/namespaces/logging/services/loki:3100/proxy/loki/api/v1/query_range?query=%7Bnamespace%3D%22demo%22%7D%20%7C%3D%20%22check-123%22&limit=5'
+# в "result" строка access-лога с "uri":"/?marker=check-123" и "status":200
 ```
 
 LogQL для Grafana (Explore → Loki):
@@ -394,7 +403,6 @@ LogQL для Grafana (Explore → Loki):
 
 - **Расширенный Gateway API**: HTTPS с cert-manager, редирект HTTP → HTTPS, маршрутизация по hostname, path и заголовку, rewrite пути, traffic splitting 90/10, таймауты, изменение заголовков ответа, несколько backend.
 - **GitOps**: Argo CD, app of apps, sync-waves, self-heal. Изменения в кластер попадают только через git.
-- **Идемпотентность проверяется в CI**: `make deploy` запускается дважды, job падает, если второй прогон что-то изменил.
 - **Алерты** (PrometheusRule): недоступность приложения и Envoy, доля 5xx, p95 времени ответа, ошибки доставки логов Fluentd.
   Видны в Prometheus `/alerts` и Alertmanager, канал уведомлений не настроен.
 - **Безопасность**:
@@ -405,20 +413,20 @@ LogQL для Grafana (Explore → Loki):
   - host key ВМ закреплён в `known_hosts`, `StrictHostKeyChecking` включён;
   - **Kyverno** ([gitops/platform/kyverno/policies](gitops/platform/kyverno/policies)): `ImageValidatingPolicy` пускает образы
     этого репозитория только с keyless-подписью cosign от workflow `image-fluentd` на `main` (Deny). Подпись ставится в CI,
-    проверяется при admission. Три `ValidatingPolicy` в режиме Audit (pinned-теги, requests/limits, probes) пишут
+    проверяется при admission, когда узел достаёт Sigstore. Три `ValidatingPolicy` в режиме Audit (pinned-теги, requests/limits, probes) пишут
     PolicyReport по каждому поду кластера: `kubectl get policyreport -A`;
   - **CIS Kubernetes Benchmark**: control plane настроен по CIS (profiling выключен, audit log API server с политикой
     [audit-policy.yaml](ansible/roles/kubeadm/files/audit-policy.yaml), права 600 на файлы kubelet). kube-bench проверяет
     узел в e2e и через `make cis`: 0 FAIL, 4 принятых исключения с причинами в [tests/cis/kube-bench.sh](tests/cis/kube-bench.sh);
   - **Kubescape**: наши манифесты проверяются по NSA hardening guide и MITRE ATT&CK (`make kubescape`), CI падает на находках
-    HIGH и CRITICAL. На момент сдачи находок нет ни одной, обе оценки 100%.
+    HIGH и CRITICAL.
 - **Цепочка поставки**: свой образ Fluentd собирается в CI ([images/fluentd](images/fluentd/Dockerfile)):
   - Debian-пакеты обновляются из snapshot.debian.org на зафиксированную дату: патчи безопасности есть, а версии пакетов при пересборке те же;
   - до публикации образ проверяется и сканируется Trivy, исправимые HIGH и CRITICAL останавливают сборку;
   - в ghcr.io уходит только из `main`, с SBOM и SLSA provenance, и подписывается cosign (keyless).
 
-  Образ Fluentd, его база и Angie закреплены по digest. Workflow `security` проверяет подпись
-  задеплоенного образа и пересканирует его на каждый push и раз в неделю. Проверить подпись вручную:
+  Workflow `security` проверяет подпись задеплоенного образа и пересканирует его на каждый push и раз в неделю.
+  Проверить подпись вручную:
 
   ```bash
   cosign verify ghcr.io/gifi71/mts-hack-2026/fluentd:v1.19.3-loki1.3.0-deb20261003-a92b22c \
@@ -426,12 +434,10 @@ LogQL для Grafana (Explore → Loki):
     --certificate-oidc-issuer https://token.actions.githubusercontent.com
   ```
 - **Меньше зависимости от Docker Hub**: containerd тянет образы `docker.io` (Envoy, Grafana, Loki и др.) сначала через зеркало `mirror.gcr.io`, чарт Envoy Gateway завендорен, Calico ставится из GitHub Releases.
-- **Надёжность приложения**: 3 реплики, readiness и liveness probes, PodDisruptionBudget, rolling update без простоя.
+- **Надёжность приложения**: 2 реплики v1 и 1 v2, readiness и liveness probes, PodDisruptionBudget, rolling update без простоя.
 - **Наблюдаемость платформы**: метрики control plane, Argo CD, cert-manager, Fluentd, Calico, Kyverno.
-  Дашборды лежат в [gitops/platform/monitoring/manifests/dashboards](gitops/platform/monitoring/manifests/dashboards), Grafana подхватывает их из ConfigMap:
-  свой «MTS Hack: gateway, app, logs», официальные ArgoCD, Envoy Gateway Global, Envoy Global, Envoy Clusters,
-  SLO-дашборды Sloth «SLO / Detail» и «High level Sloth SLOs». Дашборд Kyverno ставит его чарт,
-  стандартные дашборды (кластер, ноды, поды) ставит kube-prometheus-stack.
+  Дашборды в [gitops/platform/monitoring/manifests/dashboards](gitops/platform/monitoring/manifests/dashboards): свой
+  «MTS Hack: gateway, app, logs» (домашний), ArgoCD, Envoy, SLO Sloth; Kyverno и kube-prometheus-stack ставят свои.
 
 ## CI/CD
 
@@ -443,23 +449,15 @@ LogQL для Grafana (Explore → Loki):
 | `ci` / e2e | чистый раннер `ubuntu-24.04`: `make deploy` с kubeadm, повторный `make deploy` (должен быть `changed=0`), `make verify`, CIS Benchmark (kube-bench, отчёт в артефактах) |
 | `security` / secrets | gitleaks по всей истории git, падает на любом найденном секрете |
 | `security` / iac | Trivy config (Kubernetes, Dockerfile, OpenTofu): все находки в Security, HIGH и CRITICAL валят job |
-| `security` / image | cosign verify и Trivy задеплоенного образа Fluentd: исправимые HIGH и CRITICAL валят job на push и PR. В Security видны и CVE без исправления в Debian (пустой Fixed Version): их не закрыть обновлением, гейт их не учитывает. Еженедельный запуск только обновляет Security, чтобы CVE, опубликованная после сдачи, не меняла статус коммита |
+| `security` / image | cosign verify и Trivy задеплоенного образа Fluentd: исправимые HIGH и CRITICAL валят job, еженедельный прогон только обновляет Security |
 | `security` / kubescape | Kubescape по отрендеренным манифестам (NSA, MITRE ATT&CK): SARIF в Security, HIGH валит job |
 | `codeql` | CodeQL по workflow GitHub Actions (инъекции через входные данные, лишние права): SAST, результаты в Security |
 | `scorecard` | OpenSSF Scorecard репозитория (пины, права токенов, защита веток): SARIF в Security и бейдж в README |
 | `image-fluentd` | сборка образа Fluentd, проверка, Trivy (гейт до публикации), push в ghcr.io с SBOM и provenance, подпись cosign |
 
-Scorecard для репозитория одного автора без релизов часть проверок честно оценивает в 0: Branch-Protection, Code-Review
-и CI-Tests (изменения идут коммитами в `main`, без pull request), Maintained и Contributors (репозиторию меньше 90 дней,
-автор один), Fuzzing (нечего фаззить), CII-Best-Practices и Signed-Releases. Эти алерты видны во вкладке Security;
-что из них включается после сдачи, записано в [TODO.md](TODO.md).
-
 Принятые исключения сканеров с обоснованием: [.trivyignore.yaml](.trivyignore.yaml) (IaC), [images/fluentd/.trivyignore.yaml](images/fluentd/.trivyignore.yaml) (образ).
 
-Те же проверки, что в `ci` / lint, запускаются локально перед каждым коммитом:
-`make hooks` ставит git-хуки, `make lint` прогоняет их по всему репозиторию. Нужны `pre-commit` (`pipx install pre-commit` или `uvx pre-commit`) и `tofu`.
-
-CD выполняет Argo CD: после merge в `main` кластер приводится к состоянию из git.
+CD выполняет Argo CD: после push в `main` кластер приводится к состоянию из git.
 
 ## Структура репозитория
 
@@ -476,7 +474,6 @@ docs/adr/             архитектурные решения
 docs/passport/        паспорт решения (make passport)
 docs/task/            текст кейса и ответы организаторов на Q&A-сессии
 SECURITY.md           как сообщить об уязвимости, что проверяется автоматически
-TODO.md               что осталось сделать
 ```
 
 ## Ограничения
@@ -485,7 +482,7 @@ TODO.md               что осталось сделать
   `control_plane` и `workers`, но добавление worker-нод не реализовано и не проверено.
 - **NodePort вместо LoadBalancer.** Порты 30080 и 30443 вместо 80 и 443. Так работает в любой сети,
   включая облачные, где нет L2-анонсов для MetalLB.
-- **Самоподписанный CA.** Для HTTPS клиенту нужен `mts-hack-ca.crt` (`make ca-cert`) или `curl -k`.
+- **Самоподписанный CA.** Для HTTPS клиенту нужен CA, см. [Проверка](#приложение-и-gateway-api), или `curl -k`.
 - **Prometheus, Grafana и Argo CD UI** доступны через Gateway любому, кто достаёт до узла. Grafana и Argo CD
   требуют пароль, Prometheus нет. Для стенда допустимо, в проде нужна аутентификация на Gateway (OIDC) или отдельная сеть.
 - **Хранилище local-path**: данные Prometheus и Loki живут на диске ноды и пропадают вместе с ней.
@@ -496,28 +493,19 @@ TODO.md               что осталось сделать
   По умолчанию зеркало настроено только для `docker.io`. Свои зеркала реестров и адрес Helm задаются файлом
   [ansible/mirrors.example.yml](ansible/mirrors.example.yml): `make deploy ANSIBLE_ARGS="-e @ansible/mirrors.yml"`.
   Helm-чарты (`*.github.io`, `charts.jetstack.io`, релизы Calico на `github.com`) и сам репозиторий качаются напрямую,
-  для них нужен прокси или VPN.
-  Проверено 2026-10-03 на сети, где DPI режет CDN Docker Hub (CloudFront): `mirror.gcr.io` это pull-through-кэш,
-  слои, которых в нём нет, он перенаправляет на тот же CDN Docker Hub. Поэтому настройка containerd не помогает,
-  даже если указать `mirror.gcr.io` единственным хостом для `docker.io`. В такой сети нужно своё зеркало, которое
-  отдаёт слои само (Harbor или `registry:2` в режиме proxy за VPN), и его адрес в `mirrors.yml`.
+  для них нужен прокси или VPN. Если DPI режет CDN Docker Hub, `mirror.gcr.io` не помогает: нужно своё зеркало
+  в `mirrors.yml`. Какие реестры нужны компонентам и почему: [ADR-06](docs/adr/06-registry-and-network-resilience.md).
 - **HTTPS только по именам `*.mts-hack.local`**: сертификат и слушатель HTTPS выпущены на эти имена, поэтому
   `https://<IP>:30443` без имени не откроется (нет SNI). HTTP `http://<IP>:30080/` работает и по IP.
-- **Какие реестры нужны компонентам**: `registry.k8s.io` (control plane, pause, kube-state-metrics),
-  `quay.io` (Calico, Argo CD, cert-manager, Prometheus), `docker.io` через `mirror.gcr.io` (Envoy, Envoy Gateway,
-  Grafana, Loki, local-path-provisioner, Redis для Argo CD), `ghcr.io` (Fluentd этого репозитория, Kyverno, kube-webhook-certgen),
-  `docker.angie.software` (приложение), `github.com` (этот репозиторий для Argo CD). Зеркала: `ansible/mirrors.example.yml`.
 - **Argo CD берёт код из GitHub**, а не из локальной копии: локальные правки в `gitops/` в кластер не попадут.
 - **Только amd64**: бинарник Helm и образ Fluentd собраны под amd64.
-- **IP узла постоянный**: он зашит в сертификаты kubeadm.
 - **Метрики control plane на всех интерфейсах узла**: etcd (`:2381`) и kube-proxy (`:10249`) отдают метрики по HTTP
   без аутентификации. Для стенда допустимо, в проде их закрывают firewall или ставят прокси с mTLS.
 - **Kyverno пропускает поды, если сам недоступен** (`failurePolicy: Ignore`): на одной ноде иначе его падение или
   недоступный Sigstore блокировали бы все новые поды. Неверная подпись отклоняется, когда Sigstore доступен;
   без него поды с образами этого репозитория создаются без проверки (с задержкой до 20 с на таймаут webhook).
-- **CIS: 4 принятых исключения.** etcd под root (так ставит kubeadm), нет serving-сертификатов kubelet от CA кластера,
-  controller-manager и scheduler слушают все интерфейсы ради метрик. Бенчмарк `cis-1.12` рассчитан на Kubernetes 1.32-1.34,
-  отдельного для 1.36 в kube-bench пока нет.
+- **CIS: 4 принятых исключения**, причины в [tests/cis/kube-bench.sh](tests/cis/kube-bench.sh) и [ADR-07](docs/adr/07-kyverno-and-compliance-checks.md).
+  Бенчмарк `cis-1.12` рассчитан на Kubernetes 1.32-1.34, отдельного для 1.36 в kube-bench пока нет.
 - **Fluentd работает от root.** Ему нужен доступ к `/var/log` ноды, поэтому namespace `logging` не под PSA `restricted`.
 
 ## Лицензия
