@@ -414,7 +414,8 @@ LogQL для Grafana (Explore → Loki):
 - **Наблюдаемость платформы**: метрики control plane, Argo CD, cert-manager, Fluentd, Calico.
   Дашборды лежат в [gitops/platform/monitoring/manifests/dashboards](gitops/platform/monitoring/manifests/dashboards), Grafana подхватывает их из ConfigMap:
   свой «MTS Hack: gateway, app, logs», официальные ArgoCD, Envoy Gateway Global, Envoy Global, Envoy Clusters,
-  плюс стандартные дашборды kube-prometheus-stack (кластер, ноды, поды).
+  SLO-дашборды Sloth «SLO / Detail» и «High level Sloth SLOs». Дашборд Kyverno ставит его чарт,
+  стандартные дашборды (кластер, ноды, поды) ставит kube-prometheus-stack.
 
 ## CI/CD
 
@@ -505,5 +506,7 @@ TODO.md               что осталось сделать
 
 ## Лицензия
 
-[Apache License 2.0](LICENSE). Завендоренные чарты Envoy Gateway и официальные дашборды Argo CD, Envoy Gateway
-и Sloth распространяются без изменений под своими лицензиями (тоже Apache 2.0), подробности в [NOTICE](NOTICE).
+[Apache License 2.0](LICENSE). Сторонние материалы остаются под своими лицензиями: завендоренные чарты Envoy Gateway
+и дашборд Argo CD (без изменений), дашборды Envoy Gateway и Sloth (поправлены ссылки на datasource), шрифты IBM Plex (OFL).
+Текст кейса `docs/task/case.md` принадлежит организаторам, имя и логотип PWND.DAY под лицензию не входят.
+Подробности в [NOTICE](NOTICE).

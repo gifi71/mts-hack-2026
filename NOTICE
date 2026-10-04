@@ -3,11 +3,22 @@ Copyright 2026 Pavel Dudko
 
 Licensed under the Apache License, Version 2.0 (see LICENSE).
 
-This repository includes unmodified third-party material under its own license:
+This repository includes third-party material under its own license:
 
 - gitops/platform/envoy-gateway/charts/: Helm charts gateway-helm and gateway-crds-helm v1.9.2
-  of Envoy Gateway, Copyright The Envoy Gateway Authors, Apache License 2.0.
+  of Envoy Gateway, unmodified. Copyright The Envoy Gateway Authors, Apache License 2.0.
 - docs/passport/fonts/: IBM Plex Sans and IBM Plex Mono (woff2 subsets from @fontsource 5.3.0),
-  Copyright IBM Corp., SIL Open Font License 1.1 (docs/passport/fonts/OFL.txt).
-- gitops/platform/monitoring/manifests/dashboards/: Grafana dashboards of Argo CD
-  (Apache License 2.0), Envoy Gateway (Apache License 2.0) and Sloth (Apache License 2.0).
+  unmodified. Copyright IBM Corp., SIL Open Font License 1.1 (docs/passport/fonts/OFL.txt).
+- gitops/platform/monitoring/manifests/dashboards/: Grafana dashboards, Apache License 2.0.
+  - argocd.json: Argo CD v3.5.3 examples/dashboard.json, unmodified.
+  - envoy-*.json: Envoy Gateway v1.9.2 charts/gateway-addons-helm/dashboards. Modified: a
+    hardcoded datasource uid in envoy-gateway-global.json replaced with $datasource, trailing
+    newlines added.
+  - sloth-*.json: Sloth project dashboards from grafana.com (ID 14348 rev 5, ID 14643 rev 2).
+    Modified: the DS_PROMETHEUS export input replaced with the dashboard's own Datasource
+    variable, __inputs and __requires removed, trailing newlines added.
+
+Not covered by the license of this repository:
+
+- docs/task/case.md: the case text of MTC ENGINEER HACK 2026, provided by the organizers.
+- The PWND.DAY name and logo (docs/images/hero.png, passport wordmark).

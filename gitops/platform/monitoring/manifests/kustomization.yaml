@@ -15,15 +15,16 @@ configMapGenerator:
     namespace: monitoring
     files:
       - dashboards/mts-hack-overview.json
-  # Upstream dashboards, copied unchanged from the pinned releases (Argo CD v3.5.3
-  # examples/, Envoy Gateway v1.9.2 gateway-addons-helm) except one hardcoded
-  # datasource uid replaced with $datasource.
+  # Upstream dashboards from the pinned releases: Argo CD v3.5.3 examples/ unchanged,
+  # Envoy Gateway v1.9.2 gateway-addons-helm with one hardcoded datasource uid in
+  # envoy-gateway-global.json replaced with $datasource (see NOTICE).
   - name: argocd-dashboards
     namespace: monitoring
     files:
       - dashboards/argocd.json
-  # Sloth dashboards from grafana.com (14348 rev 5, 14643 rev 2), datasource input
-  # replaced with their own Datasource variable for sidecar provisioning.
+  # Sloth dashboards from grafana.com (14348 rev 5, 14643 rev 2): the export input
+  # DS_PROMETHEUS replaced with their own Datasource variable for sidecar provisioning,
+  # __inputs and __requires removed.
   - name: slo-dashboards
     namespace: monitoring
     files:
