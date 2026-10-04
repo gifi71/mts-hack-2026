@@ -1,36 +1,120 @@
+---
+status: принято
+date: 2026-10-03
+deciders: Павел Дудко
+related: [ADR-03, ADR-06, ADR-07]
+---
+
 # 04. Fluentd → Loki, свой образ Fluentd
 
-## Контекст
+> **Коротко.** В контексте сбора логов демо-приложения на ноде с 8 ГБ RAM, столкнувшись с тем, что ТЗ
+> разрешает только Fluentd или Filebeat, а готового DaemonSet-образа Fluentd с выводом в Loki нет, выбрали
+> Fluentd в Loki со своим образом, собранным и подписанным в CI, и не стали брать Elasticsearch,
+> OpenSearch и VictoriaLogs, чтобы метрики и логи смотрелись в одной Grafana при небольшом расходе памяти,
+> приняв поддержку своего образа и Fluentd от root.
 
-ТЗ разрешает только Fluentd или Filebeat. Логи нужно хранить и искать, на ноде 8 ГБ RAM.
+## Контекст и проблема
+
+Куда отправлять логи и из какого образа запускать коллектор? Решение затрагивает
+`gitops/platform/logging/` (values Fluentd и Loki), `gitops/apps/templates/fluentd.yaml` и `loki.yaml`,
+образ `images/fluentd/`, workflow `image-fluentd` и job `image` в workflow `security`.
+
+## Требования и ограничения
+
+- Логи собирает Fluentd или Filebeat, нужны access- и error-логи приложения, после запроса запись должна
+  появляться в хранилище (docs/task/case.md, «Логирование»).
+- Мониторинг и логирование: 20 баллов, оценивается и качество подхода к observability
+  (docs/task/case.md, критерий 3).
+- Агрегатор логов в кластере (например, Loki) рядом с Prometheus засчитывается как плюс (docs/task/qa.md).
+- Нода одна, 8 ГБ RAM: на ней же control plane, Prometheus, Argo CD и Kyverno (ADR-01).
+- Образ должен быть публичным или собираться из материалов репозитория (docs/task/case.md).
+
+## Рассмотренные варианты
+
+1. Fluentd → Loki, свой образ Fluentd
+2. Filebeat → Elasticsearch и Kibana
+3. Fluentd → OpenSearch
+4. Fluentd → VictoriaLogs
 
 ## Решение
 
-- **Fluentd 1.19** DaemonSet читает `/var/log/containers`, добавляет метаданные Kubernetes,
-  разбирает JSON access-лога Angie и пишет в **Loki 3.7** (monolithic, filesystem, 3 дня).
-- Метрики и логи смотрятся в одной Grafana.
+Выбран вариант «Fluentd → Loki», потому что Loki ставится одним подом, не требует отдельного UI и
+открывается в той же Grafana, что и метрики.
+
+- **Fluentd 1.19.3** DaemonSet (чарт `fluentd` 0.6.0 с fluent.github.io, sync-wave 1, namespace `logging`)
+  читает `/var/log/containers/*.log` парсером CRI, добавляет метаданные фильтром `kubernetes_metadata` и
+  разбирает JSON access-лога Angie. Конфигурация в `gitops/platform/logging/fluentd.yaml`.
+- Выход `@type loki` в `http://loki.logging.svc:3100`. Метки Loki: `namespace`, `pod`, `container`, `app`,
+  `stream`. Поля access-лога (`status`, `uri`, `request_time`, `version`) остаются в JSON-строке.
+- **Loki 3.7.8** (чарт 18.13.7 с grafana-community.github.io, sync-wave -1): monolithic, хранилище filesystem
+  на PVC 5Gi (local-path), `retention_period: 72h` (3 дня, как у Prometheus). Конфигурация в
+  `gitops/platform/logging/loki.yaml`.
+- Grafana получает Loki как datasource (`additionalDataSources` в
+  `gitops/platform/monitoring/kube-prometheus-stack.yaml`).
 - Готового DaemonSet-образа с выводом в Loki нет: `grafana/fluent-plugin-loki` не содержит фильтра
   `kubernetes_metadata` и парсера CRI, а у `fluentd-kubernetes-daemonset` нет варианта с Loki.
-  Свой образ = официальный `fluentd-kubernetes-daemonset` (по digest) + `fluent-plugin-grafana-loki`.
-  Собирается в CI, сканируется Trivy, подписывается cosign.
-- Апстрим-образ собран без свежих исправлений Debian (3 CRITICAL и около 25 HIGH на 2026-10-03:
-  perl, util-linux, openssl). Сборка делает `apt-get upgrade` из snapshot.debian.org на
-  зафиксированную дату (`ARG DEBIAN_SNAPSHOT`). Обычный `upgrade` из живого зеркала даёт другой набор
-  пакетов при каждой пересборке, snapshot даёт те же версии. Дата входит в тег образа.
+  Свой образ (`images/fluentd/Dockerfile`): `fluent/fluentd-kubernetes-daemonset:v1.19.3-debian-forward-1.1`
+  по digest плюс `fluent-plugin-grafana-loki` 1.3.0. Gem фиксируются по версии и sha256 и ставятся с
+  `--local`. Дополнительно ставится `resolv` 0.7.2 вместо встроенного в Ruby 0.7.1 (CVE-2026-80212).
+- Апстрим-образ собран без свежих исправлений Debian (на 2026-10-03: 3 CRITICAL и около 25 HIGH в perl,
+  util-linux, openssl). Сборка делает `apt-get upgrade` из snapshot.debian.org на зафиксированную дату
+  (`ARG DEBIAN_SNAPSHOT=20261003T000000Z`). Обычный `upgrade` из живого зеркала даёт другой набор пакетов
+  при каждой пересборке, snapshot даёт те же версии.
+- Тег образа: версии Fluentd и плагина, дата snapshot и хеш контекста сборки
+  (`v1.19.3-loki1.3.0-deb20261003-a92b22c`). В values образ закреплён по digest, который подписал cosign.
 - Trivy стоит до публикации: исправимые HIGH и CRITICAL не дают образу попасть в ghcr.io.
-  Исключения с обоснованием в `images/fluentd/.trivyignore.yaml`.
+  Исключения с обоснованием в `images/fluentd/.trivyignore.yaml`. При push образ получает SBOM и
+  SLSA provenance и подписывается cosign keyless.
 
-## Варианты
+### Последствия
 
-- **Filebeat → Elasticsearch/Kibana**: тяжелее по памяти, лицензии Elastic.
-- **Fluentd → OpenSearch**: полнотекстовый поиск, но 2-3 ГБ RAM.
-- **VictoriaLogs**: экономнее Loki на больших объёмах. На наших объёмах разница несущественна,
-  а Loki с Grafana привычнее проверяющим. Вынесено в развитие.
+- Плюс: метрики и логи в одной Grafana, хранилище логов занимает один под с лимитом 1 ГБ RAM.
+- Плюс: логи приложения структурированы, в Loki по ним работают фильтры LogQL (`| json | status >= 500`).
+- Плюс: образ коллектора проверяется Trivy до публикации, его подпись проверяет Kyverno при admission (ADR-07).
+- Минус: Fluentd работает от root (нужен `/var/log` ноды), namespace `logging` без PSA `restricted`.
+- Минус: патчи безопасности базы приходят только при сдвиге `DEBIAN_SNAPSHOT`. Сдвиг делается руками,
+  сигнал к нему даёт еженедельный скан в workflow `security`.
+- Минус: Loki на local-path, логи пропадают вместе с нодой.
+- Нейтрально: образ не побитово воспроизводим (временные метки файлов), воспроизводимы версии пакетов и gem.
 
-## Последствия
+### Как проверяется
 
-- Fluentd работает от root (нужен `/var/log` ноды), namespace `logging` не под PSA `restricted`.
-- Логи приложения структурированы: в Loki доступны `status`, `uri`, `request_time`, `version`.
-- Патчи безопасности базы приходят только при сдвиге `DEBIAN_SNAPSHOT`. Сдвиг делается руками,
-  сигнал к нему даёт еженедельный скан в workflow `security`. Образ не побитово воспроизводим
-  (временные метки файлов), воспроизводимы версии пакетов и gem.
+- `make verify`: «access log (stdout) for ?marker=… found in Loki», «error log (stderr) for /missing?marker=…
+  found in Loki», «signed Fluentd image admitted».
+- CI: workflow `image-fluentd`, шаги «Check the image» (версия плагина и `Resolv::VERSION`), «Scan image
+  with Trivy (fail on fixable HIGH and CRITICAL)» до «Push», затем «Sign image (keyless, GitHub OIDC)».
+- CI: workflow `security`, job «deployed Fluentd image (cosign, Trivy)»: «Verify the signature» для образа
+  из `gitops/platform/logging/fluentd.yaml` и «Trivy image gate (fixable HIGH, CRITICAL)». По расписанию
+  (понедельник, 04:00 UTC) скан только отчитывается в Security tab.
+
+## Плюсы и минусы вариантов
+
+### Filebeat → Elasticsearch и Kibana
+
+- Плюс: полнотекстовый поиск, привычный стек.
+- Минус: Elasticsearch тяжелее по памяти, лицензии Elastic.
+
+### Fluentd → OpenSearch
+
+- Плюс: полнотекстовый поиск, открытая лицензия.
+- Минус: 2-3 ГБ RAM, на ноде с 8 ГБ это слишком много.
+
+### Fluentd → VictoriaLogs
+
+- Плюс: экономнее Loki на больших объёмах.
+- Минус: на наших объёмах разница несущественна, а Loki с Grafana привычнее проверяющим.
+
+## Когда пересмотреть
+
+- Объём логов растёт настолько, что Loki на filesystem не справляется: object storage или VictoriaLogs.
+- В апстриме появляется образ `fluentd-kubernetes-daemonset` с выводом в Loki.
+- Появляется вторая нода: Loki на local-path перестаёт подходить.
+
+## Ссылки
+
+- Код: `images/fluentd/Dockerfile`, `images/fluentd/.trivyignore.yaml`, `gitops/platform/logging/`,
+  `.github/workflows/image-fluentd.yml`, `.github/workflows/security.yml`
+- Связанные ADR: ADR-03, ADR-06, ADR-07
+- Требования: [docs/task/case.md](../task/case.md), [docs/task/qa.md](../task/qa.md)
+- Документация: <https://github.com/fluent/fluentd-kubernetes-daemonset>,
+  <https://grafana.com/docs/loki/latest/operations/storage/retention/>, <https://snapshot.debian.org/>
