@@ -9,7 +9,7 @@ vm_id              = 9100
 
 vm = {
   cpu    = 4
-  memory = 8192
+  memory = 16384
   disk   = 30
 }
 

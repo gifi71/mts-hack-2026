@@ -13,7 +13,7 @@ variable "vm" {
   description = "VM size. memory in MiB, disk in GiB. Defaults fit the full stack on one node."
   type = object({
     cpu    = optional(number, 4)
-    memory = optional(number, 8192)
+    memory = optional(number, 16384)
     disk   = optional(number, 30)
   })
   default = {}
