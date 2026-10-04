@@ -1,4 +1,4 @@
-# 0003. Ansible до CNI и Argo CD, дальше GitOps
+# 03. Ansible до CNI и Argo CD, дальше GitOps
 
 ## Контекст
 

@@ -474,7 +474,7 @@ TODO.md               что осталось сделать
 - **Хранилище local-path**: данные Prometheus и Loki живут на диске ноды и пропадают вместе с ней.
 - **State OpenTofu** хранится локально.
 - **Нужен интернет** на узле: пакеты, образы, чарты и этот репозиторий для Argo CD. Организаторы на Q&A подтвердили,
-  что у проверяющих он есть ([docs/task/qa-2026-10-02.md](docs/task/qa-2026-10-02.md)). Из некоторых российских сетей
+  что у проверяющих он есть ([docs/task/qa.md](docs/task/qa.md)). Из некоторых российских сетей
   без VPN недоступны Docker Hub, `get.helm.sh`, `registry.k8s.io`, `ghcr.io`, `mirror.gcr.io` и чарты на `*.github.io`.
   По умолчанию зеркало настроено только для `docker.io`. Свои зеркала реестров и адрес Helm задаются файлом
   [ansible/mirrors.example.yml](ansible/mirrors.example.yml): `make deploy ANSIBLE_ARGS="-e @ansible/mirrors.yml"`.

@@ -1,4 +1,4 @@
-# 0002. Envoy Gateway и NodePort вместо LoadBalancer с MetalLB
+# 02. Envoy Gateway и NodePort вместо LoadBalancer с MetalLB
 
 ## Контекст
 

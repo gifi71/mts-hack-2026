@@ -1,4 +1,4 @@
-# 0004. Fluentd → Loki, свой образ Fluentd
+# 04. Fluentd → Loki, свой образ Fluentd
 
 ## Контекст
 

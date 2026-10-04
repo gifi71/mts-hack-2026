@@ -4,12 +4,12 @@
 
 | № | Решение |
 |---|---|
-| [0001](0001-single-node-kubeadm.md) | Одна нода на kubeadm |
-| [0002](0002-envoy-gateway-nodeport.md) | Envoy Gateway и NodePort вместо LoadBalancer с MetalLB |
-| [0003](0003-gitops-argocd-app-of-apps.md) | Ansible до CNI и Argo CD, дальше GitOps (app of apps) |
-| [0004](0004-fluentd-loki.md) | Fluentd → Loki, свой образ Fluentd |
-| [0005](0005-opentofu-optional-layer.md) | OpenTofu как опциональный слой, Proxmox |
-| [0006](0006-registry-and-network-resilience.md) | Установка при недоступных реестрах и чужом DNS |
-| [0007](0007-kyverno-and-compliance-checks.md) | Kyverno для подписи образов, CIS и Kubescape для соответствия |
+| [01](01-single-node-kubeadm.md) | Одна нода на kubeadm |
+| [02](02-envoy-gateway-nodeport.md) | Envoy Gateway и NodePort вместо LoadBalancer с MetalLB |
+| [03](03-gitops-argocd-app-of-apps.md) | Ansible до CNI и Argo CD, дальше GitOps (app of apps) |
+| [04](04-fluentd-loki.md) | Fluentd → Loki, свой образ Fluentd |
+| [05](05-opentofu-optional-layer.md) | OpenTofu как опциональный слой, Proxmox |
+| [06](06-registry-and-network-resilience.md) | Установка при недоступных реестрах и чужом DNS |
+| [07](07-kyverno-and-compliance-checks.md) | Kyverno для подписи образов, CIS и Kubescape для соответствия |
 
-Шаблон для новых решений: [xxxx-template.md](xxxx-template.md).
+Шаблон для новых решений: [00-template.md](00-template.md).
