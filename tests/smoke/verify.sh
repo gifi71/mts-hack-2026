@@ -82,8 +82,11 @@ else
 fi
 not_ready=$(kubectl -n argocd get applications.argoproj.io --no-headers \
   -o custom-columns=N:.metadata.name,S:.status.sync.status,H:.status.health.status | grep -v 'Synced *Healthy' || true)
-if [[ -z "$not_ready" ]]; then
-  pass "Argo CD: $(kubectl -n argocd get applications.argoproj.io --no-headers | wc -l) applications Synced/Healthy"
+apps=$(kubectl -n argocd get applications.argoproj.io --no-headers 2>/dev/null | wc -l)
+if ((apps == 0)); then
+  fail "Argo CD: no applications, the root Application is missing"
+elif [[ -z "$not_ready" ]]; then
+  pass "Argo CD: ${apps} applications Synced/Healthy"
 else
   fail "Argo CD applications not Synced/Healthy:"
   while IFS= read -r line; do echo "      $line"; done <<<"$not_ready"

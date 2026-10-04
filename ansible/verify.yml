@@ -14,8 +14,14 @@
       ansible.builtin.debug:
         msg: "{{ verify_result.stdout_lines }}"
 
+    # verify.sh prints checks to stdout; an aborted run explains itself on stderr.
+    - name: Show errors
+      ansible.builtin.debug:
+        msg: "{{ verify_result.stderr_lines }}"
+      when: verify_result.stderr_lines | default([]) | length > 0
+
     - name: Fail if any check failed
       ansible.builtin.assert:
         that: verify_result.rc == 0
-        fail_msg: "{{ verify_result.rc }} check(s) failed, see the output above"
+        fail_msg: "verify.sh exited with {{ verify_result.rc }}: the number of FAIL checks, or an error shown above"
         quiet: true
