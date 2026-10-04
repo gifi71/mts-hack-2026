@@ -14,9 +14,11 @@ prometheus:
     podMonitorSelectorNilUsesHelmValues: false
     ruleSelectorNilUsesHelmValues: false
     probeSelectorNilUsesHelmValues: false
+    # Head series grow with every new target and with 3 days of rules and queries; the limit
+    # leaves room for heavy dashboard queries.
     resources:
-      requests: {cpu: 200m, memory: 512Mi}
-      limits: {memory: 1536Mi}
+      requests: {cpu: 200m, memory: 1Gi}
+      limits: {memory: 4Gi}
     storageSpec:
       volumeClaimTemplate:
         spec:
@@ -31,7 +33,7 @@ alertmanager:
     retention: 72h
     resources:
       requests: {cpu: 10m, memory: 32Mi}
-      limits: {memory: 128Mi}
+      limits: {memory: 256Mi}
 
 grafana:
   admin:
@@ -59,21 +61,23 @@ grafana:
       uid: loki
       access: proxy
       url: http://loki.logging.svc:3100
+  # At 384Mi Grafana thrashed at its limit with a few dashboards open (100% CPU, queries past
+  # the 15 s gateway timeout).
   resources:
-    requests: {cpu: 50m, memory: 128Mi}
-    limits: {memory: 384Mi}
+    requests: {cpu: 50m, memory: 256Mi}
+    limits: {memory: 1536Mi}
 
 prometheusOperator:
   resources:
     requests: {cpu: 50m, memory: 64Mi}
-    limits: {memory: 256Mi}
+    limits: {memory: 512Mi}
 
 kube-state-metrics:
   resources:
     requests: {cpu: 10m, memory: 32Mi}
-    limits: {memory: 128Mi}
+    limits: {memory: 512Mi}
 
 prometheus-node-exporter:
   resources:
     requests: {cpu: 10m, memory: 32Mi}
-    limits: {memory: 64Mi}
+    limits: {memory: 256Mi}

@@ -51,19 +51,19 @@ controller:
   # The controller caches every managed object, CRDs included. Kyverno's CRDs carry large
   # schemas; with 768Mi the controller was OOMKilled while filling the cache on start.
   resources:
-    requests: {cpu: 100m, memory: 512Mi}
-    limits: {memory: 1536Mi}
+    requests: {cpu: 100m, memory: 768Mi}
+    limits: {memory: 3Gi}
 
 server:
   metrics:
     enabled: true
   resources:
     requests: {cpu: 50m, memory: 64Mi}
-    limits: {memory: 256Mi}
+    limits: {memory: 512Mi}
 
 repoServer:
   metrics:
     enabled: true
   resources:
-    requests: {cpu: 50m, memory: 128Mi}
-    limits: {memory: 512Mi}
+    requests: {cpu: 50m, memory: 256Mi}
+    limits: {memory: 1536Mi}

@@ -17,8 +17,8 @@ env:
         fieldPath: spec.nodeName
 
 resources:
-  requests: {cpu: 50m, memory: 128Mi}
-  limits: {memory: 384Mi}
+  requests: {cpu: 50m, memory: 256Mi}
+  limits: {memory: 1Gi}
 
 # containerd writes logs under /var/log/pods; /var/lib/docker is not used.
 mountVarLogDirectory: true

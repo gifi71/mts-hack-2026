@@ -13,7 +13,7 @@ spec:
         container:
           resources:
             requests: {cpu: 50m, memory: 64Mi}
-            limits: {memory: 256Mi}
+            limits: {memory: 1Gi}
       # NodePort with fixed ports instead of LoadBalancer + MetalLB:
       # works on any VM, including cloud networks without L2 announcements.
       envoyService:
