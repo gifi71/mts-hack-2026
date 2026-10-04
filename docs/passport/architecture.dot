@@ -1,7 +1,7 @@
 digraph arch {
   graph [rankdir=TB, fontname="DejaVu Sans", fontsize=11, nodesep=0.35, ranksep=0.6, pad=0.2, bgcolor="white"];
-  node  [shape=box, style="rounded,filled", fontname="DejaVu Sans", fontsize=10, fillcolor="#f6f6f6", color="#1a1a1a"];
-  edge  [fontname="DejaVu Sans", fontsize=9, color="#6b6b6b", fontcolor="#3a3a3a"];
+  node  [shape=box, style="rounded,filled", fontname="DejaVu Sans", fontsize=12, fillcolor="#f6f6f6", color="#1a1a1a"];
+  edge  [fontname="DejaVu Sans", fontsize=11, color="#6b6b6b", fontcolor="#3a3a3a"];
 
   user [label="Пользователь\ncurl / браузер", shape=oval, fillcolor="#ffffff"];
   git  [label="GitHub\ngifi71/mts-hack-2026", shape=cylinder, fillcolor="#ffffff"];
@@ -38,6 +38,7 @@ digraph arch {
   envoy -> v2 [label="10%, X-Canary, /v2"];
   envoy -> grafana [label="HTTPS"];
   prom -> v1 [style=dashed, label="scrape"];
+  prom -> v2 [style=dashed];
   prom -> envoy [style=dashed];
   prom -> cp [style=dashed];
   v1 -> logs [style=dotted]; v2 -> logs [style=dotted];
