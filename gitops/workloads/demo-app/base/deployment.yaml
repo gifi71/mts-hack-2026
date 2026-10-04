@@ -46,6 +46,12 @@ spec:
               port: http
             periodSeconds: 10
             failureThreshold: 3
+          # Envoy keeps sending requests until the endpoint update reaches it; Angie stops at once
+          # on SIGTERM. The pause keeps rolling updates free of 502/503.
+          lifecycle:
+            preStop:
+              sleep:
+                seconds: 5
           resources:
             requests: {cpu: 10m, memory: 16Mi}
             # CPU limit keeps one noisy pod from starving the single node (NSA hardening guide).
