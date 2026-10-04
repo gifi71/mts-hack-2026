@@ -1,11 +1,15 @@
 # MTC ENGINEER HACK 2026: DevOps
 
-![Кластер с нуля одной командой: kubeadm, Gateway API, GitOps, DevSecOps](docs/images/hero.png)
+<p align="center">
+  <img src="docs/images/hero.png" alt="Кластер с нуля одной командой: kubeadm, Gateway API, GitOps, DevSecOps">
+</p>
 
-[![ci](https://github.com/gifi71/mts-hack-2026/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/gifi71/mts-hack-2026/actions/workflows/ci.yml)
-[![security](https://github.com/gifi71/mts-hack-2026/actions/workflows/security.yml/badge.svg?branch=main)](https://github.com/gifi71/mts-hack-2026/actions/workflows/security.yml)
-[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/gifi71/mts-hack-2026/badge)](https://scorecard.dev/viewer/?uri=github.com/gifi71/mts-hack-2026)
-[![image-fluentd](https://github.com/gifi71/mts-hack-2026/actions/workflows/image-fluentd.yml/badge.svg?branch=main)](https://github.com/gifi71/mts-hack-2026/actions/workflows/image-fluentd.yml)
+<p align="center">
+  <a href="https://github.com/gifi71/mts-hack-2026/actions/workflows/ci.yml"><img src="https://github.com/gifi71/mts-hack-2026/actions/workflows/ci.yml/badge.svg?branch=main" alt="ci"></a>
+  <a href="https://github.com/gifi71/mts-hack-2026/actions/workflows/image-fluentd.yml"><img src="https://github.com/gifi71/mts-hack-2026/actions/workflows/image-fluentd.yml/badge.svg?branch=main" alt="image-fluentd"></a>
+  <a href="https://github.com/gifi71/mts-hack-2026/actions/workflows/security.yml"><img src="https://github.com/gifi71/mts-hack-2026/actions/workflows/security.yml/badge.svg?branch=main" alt="security"></a>
+  <a href="https://scorecard.dev/viewer/?uri=github.com/gifi71/mts-hack-2026"><img src="https://api.scorecard.dev/projects/github.com/gifi71/mts-hack-2026/badge" alt="OpenSSF Scorecard"></a>
+</p>
 
 Kubernetes-кластер на **kubeadm** с нуля на Ubuntu 24.04 и платформа вокруг демо-приложения:
 публикация через **Gateway API** (Envoy Gateway), метрики в **Prometheus**, логи через **Fluentd** в Loki.
