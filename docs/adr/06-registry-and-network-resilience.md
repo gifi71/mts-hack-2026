@@ -2,7 +2,7 @@
 status: принято
 date: 2026-10-04
 deciders: Павел Дудко
-related: [ADR-02, ADR-03, ADR-04, ADR-07]
+related: [ADR-02, ADR-03, ADR-04, ADR-07, ADR-08, ADR-10]
 ---
 
 # 06. Установка при недоступных реестрах и чужом DNS
@@ -127,7 +127,7 @@ Helm-репозиторий Calico отдавал ~0.4 КБ/с, а search-дом
 - Код: `ansible/roles/containerd/`, `ansible/mirrors.example.yml`,
   `ansible/roles/kubeadm/templates/resolv.conf.j2`, `ansible/roles/calico/defaults/main.yml`,
   `gitops/platform/envoy-gateway/charts/README.md`
-- Связанные ADR: ADR-02, ADR-03, ADR-04, ADR-07
+- Связанные ADR: ADR-02, ADR-03, ADR-04, ADR-07, ADR-08, ADR-10
 - Требования: [docs/task/case.md](../task/case.md), [docs/task/qa.md](../task/qa.md)
 - Документация: <https://github.com/containerd/containerd/blob/main/docs/hosts.md>,
   <https://cloud.google.com/artifact-registry/docs/pull-cached-dockerhub-images>

@@ -60,7 +60,7 @@ related: [ADR-01]
 
 ### Как проверяется
 
-- CI: workflow `ci`, job lint, шаг «OpenTofu validate, test» (`make tofu-check`): `tofu fmt -check`,
+- CI: workflow `ci`, job «lint and validate», шаг «OpenTofu validate, test» (`make tofu-check`): `tofu fmt -check`,
   `tofu validate` root-модуля и `tofu test` модуля inventory. Тесты проверяют адрес хоста,
   `StrictHostKeyChecking=yes`, содержимое `known_hosts` и `ProxyCommand` для bastion.
 - pre-commit: хук `tofu fmt`.

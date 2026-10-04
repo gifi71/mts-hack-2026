@@ -1,8 +1,8 @@
 ---
 status: принято
-date: 2026-10-03
+date: 2026-10-04
 deciders: Павел Дудко
-related: [ADR-03, ADR-06, ADR-07]
+related: [ADR-01, ADR-03, ADR-06, ADR-07, ADR-09, ADR-10]
 ---
 
 # 04. Fluentd → Loki, свой образ Fluentd
@@ -27,7 +27,8 @@ related: [ADR-03, ADR-06, ADR-07]
   (docs/task/case.md, критерий 3).
 - Агрегатор логов в кластере (например, Loki) рядом с Prometheus засчитывается как плюс (docs/task/qa.md).
 - Нода одна, минимум 8 ГБ RAM: на ней же control plane, Prometheus, Argo CD и Kyverno (ADR-01).
-- Образ должен быть публичным или собираться из материалов репозитория (docs/task/case.md).
+- Образ демо-приложения должен быть публичным или собираться из материалов репозитория (docs/task/case.md).
+  То же правило применено к образу коллектора.
 
 ## Рассмотренные варианты
 
@@ -45,10 +46,13 @@ related: [ADR-03, ADR-06, ADR-07]
   читает `/var/log/containers/*.log` парсером CRI, добавляет метаданные фильтром `kubernetes_metadata` и
   разбирает JSON access-лога Angie. Конфигурация в `gitops/platform/logging/fluentd.yaml`.
 - Выход `@type loki` в `http://loki.logging.svc:3100`. Метки Loki: `namespace`, `pod`, `container`, `app`
-  (из `app.kubernetes.io/name`, у приложения `angie`), `stream` и постоянные `cluster`, `collector`. Поля access-лога (`status`, `uri`, `request_time`, `version`) остаются в JSON-строке.
+  (из `app.kubernetes.io/name`, у приложения `angie`), `stream` и постоянные `cluster`, `collector`.
+  Поля access-лога (`status`, `uri`, `request_time`, `version`) остаются в JSON-строке.
+- Файловый буфер Fluentd лежит на корневой ФС ноды и ограничен: `total_limit_size 512m`,
+  `overflow_action drop_oldest_chunk` вместо 64 ГБ по умолчанию.
 - **Loki 3.7.8** (чарт 18.13.7 с grafana-community.github.io, sync-wave -1): monolithic, хранилище filesystem
-  на PVC 5Gi (local-path), `retention_period: 72h` (3 дня, как у Prometheus). Конфигурация в
-  `gitops/platform/logging/loki.yaml`.
+  на PVC 5Gi (local-path), `retention_period: 72h` (3 дня, как у Prometheus, ADR-09). Старое удаляет
+  compactor, API удаления выключен (`deletion_mode: disabled`). Конфигурация в `gitops/platform/logging/loki.yaml`.
 - Grafana получает Loki как datasource (`additionalDataSources` в
   `gitops/platform/monitoring/kube-prometheus-stack.yaml`).
 - Готового DaemonSet-образа с выводом в Loki нет: `grafana/fluent-plugin-loki` не содержит фильтра
@@ -75,6 +79,7 @@ related: [ADR-03, ADR-06, ADR-07]
 - Минус: патчи безопасности базы приходят только при сдвиге `DEBIAN_SNAPSHOT`. Сдвиг делается руками,
   сигнал к нему даёт еженедельный скан в workflow `security`.
 - Минус: Loki на local-path, логи пропадают вместе с нодой.
+- Минус: если Loki недоступен дольше, чем заполняется буфер в 512 МБ, старые чанки выбрасываются.
 - Нейтрально: образ не побитово воспроизводим (временные метки файлов), воспроизводимы версии пакетов и gem.
 
 ### Как проверяется
@@ -114,7 +119,7 @@ related: [ADR-03, ADR-06, ADR-07]
 
 - Код: `images/fluentd/Dockerfile`, `images/fluentd/.trivyignore.yaml`, `gitops/platform/logging/`,
   `.github/workflows/image-fluentd.yml`, `.github/workflows/security.yml`
-- Связанные ADR: ADR-03, ADR-06, ADR-07
+- Связанные ADR: ADR-01, ADR-03, ADR-06, ADR-07, ADR-09, ADR-10
 - Требования: [docs/task/case.md](../task/case.md), [docs/task/qa.md](../task/qa.md)
 - Документация: <https://github.com/fluent/fluentd-kubernetes-daemonset>,
   <https://grafana.com/docs/loki/latest/operations/storage/retention/>, <https://snapshot.debian.org/>

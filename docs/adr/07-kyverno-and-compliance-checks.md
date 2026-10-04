@@ -2,7 +2,7 @@
 status: принято
 date: 2026-10-04
 deciders: Павел Дудко
-related: [ADR-01, ADR-03, ADR-04, ADR-06]
+related: [ADR-01, ADR-03, ADR-04, ADR-06, ADR-10]
 ---
 
 # 07. Kyverno для подписи образов, CIS и Kubescape для соответствия
@@ -55,7 +55,8 @@ related: [ADR-01, ADR-03, ADR-04, ADR-06]
     проверки, а не ошибка.
   - Три `ValidatingPolicy` в режиме Audit: `disallow-latest-tag`, `require-requests-limits`,
     `require-probes` (`workload-hygiene.yaml`). Сторонние чарты нам не исправить, поэтому результаты
-    идут в PolicyReport, а не блокируют.
+    идут в PolicyReport, а не блокируют. У них тоже `failurePolicy: Ignore`: дефолт CRD `Fail` блокировал
+    бы все новые поды при недоступном Kyverno, хотя сами политики ничего не запрещают.
   - Образы Kyverno берутся с ghcr.io, а не с `reg.kyverno.io` (`gitops/platform/kyverno/values.yaml`):
     ghcr.io уже нужен для Fluentd, новый реестр не появляется.
 - **CIS Kubernetes Benchmark** через kube-bench 0.16.0 (бенчмарк `cis-1.12`). Control plane настроен по
@@ -129,7 +130,7 @@ related: [ADR-01, ADR-03, ADR-04, ADR-06]
 - Код: `gitops/platform/kyverno/`, `gitops/apps/templates/kyverno.yaml`,
   `ansible/roles/kubeadm/templates/kubeadm-config.yaml.j2`, `tests/cis/kube-bench.sh`,
   `tests/smoke/verify.sh`, `.github/workflows/ci.yml`, `.github/workflows/security.yml`
-- Связанные ADR: ADR-01, ADR-03, ADR-04, ADR-06
+- Связанные ADR: ADR-01, ADR-03, ADR-04, ADR-06, ADR-10
 - Требования: [docs/task/case.md](../task/case.md)
 - Документация: <https://kyverno.io/docs/>, <https://github.com/aquasecurity/kube-bench>,
   <https://kubescape.io/docs/>

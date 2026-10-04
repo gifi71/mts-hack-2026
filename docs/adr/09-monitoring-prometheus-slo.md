@@ -2,7 +2,7 @@
 status: принято
 date: 2026-10-04
 deciders: Павел Дудко
-related: [ADR-02, ADR-03, ADR-04]
+related: [ADR-02, ADR-03, ADR-04, ADR-10]
 ---
 
 # 09. kube-prometheus-stack и SLO как код (Sloth)
@@ -18,7 +18,7 @@ related: [ADR-02, ADR-03, ADR-04]
 Как поставить Prometheus, подключить к нему компоненты платформы и показать эксперту не только сбор
 метрик, но и их смысл? Компоненты лежат в разных namespace и ставятся разными чартами, у многих есть свои
 ServiceMonitor. Решение затрагивает `gitops/platform/monitoring/` (values, правила, SLO, дашборды) и
-мониторы в `gitops/workloads/demo-app/` и `gitops/platform/*/values.yaml`.
+мониторы в `gitops/workloads/demo-app/` и в values чартов в `gitops/platform/`.
 
 ## Требования и ограничения
 
@@ -51,7 +51,7 @@ ServiceMonitor. Решение затрагивает `gitops/platform/monitorin
 - **kube-prometheus-stack 91.8.2** (`gitops/apps/templates/kube-prometheus-stack.yaml`, sync-wave -2: его CRD
   ServiceMonitor нужны компонентам следующих волн). Values в `gitops/platform/monitoring/kube-prometheus-stack.yaml`.
 - Хранение: `retention: 3d` (как у Loki, ADR-04) и `retentionSize: 6GB` на PVC 8Gi (local-path).
-  Глобальный `scrapeInterval: 30s`, Angie и Envoy опрашиваются раз в 15 с.
+  Глобальный `scrapeInterval: 30s`, Angie и прокси Envoy опрашиваются раз в 15 с.
 - `*SelectorNilUsesHelmValues: false`: Prometheus берёт ServiceMonitor, PodMonitor, Probe и PrometheusRule из
   всех namespace, а не только с меткой релиза. Мониторы лежат рядом с компонентом: Angie в
   `gitops/workloads/demo-app/servicemonitor.yaml`, Envoy в `gitops/platform/monitoring/manifests/envoy.yaml`
@@ -130,7 +130,7 @@ ServiceMonitor. Решение затрагивает `gitops/platform/monitorin
 
 - Код: `gitops/platform/monitoring/kube-prometheus-stack.yaml`, `gitops/platform/monitoring/manifests/`,
   `gitops/platform/monitoring/slo/demo-app.yaml`, `gitops/workloads/demo-app/servicemonitor.yaml`
-- Связанные ADR: ADR-02, ADR-03, ADR-04
+- Связанные ADR: ADR-02, ADR-03, ADR-04, ADR-10
 - Требования: [docs/task/case.md](../task/case.md), [docs/task/qa.md](../task/qa.md)
 - Документация: <https://github.com/prometheus-community/helm-charts/tree/main/charts/kube-prometheus-stack>,
   <https://sloth.dev/>, <https://sre.google/workbook/alerting-on-slos/>

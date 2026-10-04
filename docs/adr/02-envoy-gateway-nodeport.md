@@ -2,7 +2,7 @@
 status: принято
 date: 2026-10-03
 deciders: Павел Дудко
-related: [ADR-01, ADR-03, ADR-06]
+related: [ADR-01, ADR-03, ADR-06, ADR-08, ADR-09, ADR-10, ADR-11]
 ---
 
 # 02. Envoy Gateway и NodePort вместо LoadBalancer с MetalLB
@@ -113,7 +113,7 @@ related: [ADR-01, ADR-03, ADR-06]
 
 - Код: `gitops/platform/gateway/`, `gitops/workloads/demo-app/httproute.yaml`,
   `gitops/apps/templates/envoy-gateway.yaml`, `gitops/apps/templates/gateway-api-crds.yaml`
-- Связанные ADR: ADR-01, ADR-03, ADR-06
+- Связанные ADR: ADR-01, ADR-03, ADR-06, ADR-08, ADR-09, ADR-10, ADR-11
 - Требования: [docs/task/case.md](../task/case.md), [docs/task/qa.md](../task/qa.md)
 - Документация: <https://gateway.envoyproxy.io/news/releases/matrix/>,
   <https://kubernetes.io/blog/2025/11/11/ingress-nginx-retirement/>

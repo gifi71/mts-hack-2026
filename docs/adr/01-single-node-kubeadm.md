@@ -2,7 +2,7 @@
 status: принято
 date: 2026-10-03
 deciders: Павел Дудко
-related: [ADR-03, ADR-05]
+related: [ADR-02, ADR-03, ADR-05, ADR-07, ADR-08]
 ---
 
 # 01. Одна нода на kubeadm
@@ -47,8 +47,8 @@ related: [ADR-03, ADR-05]
 ### Последствия
 
 - Плюс: эксперт поднимает решение на одной ВМ одной командой `make deploy`. Этот же сценарий проходит e2e в CI.
-- Плюс: требования к ВМ (4 vCPU, 8 ГБ RAM, 30 ГБ диска) ниже машины проверки. Лимиты памяти подов заданы
-  с запасом под 16 ГБ, как у проверяющих.
+- Плюс: требования к ВМ (4 vCPU, 8 ГБ RAM, рекомендуется 16 ГБ, 30 ГБ диска) не выше машины проверки.
+  Лимиты памяти подов заданы с запасом под 16 ГБ, как у проверяющих.
 - Минус: HA нет. Потеря ноды означает потерю кластера и данных Prometheus и Loki (local-path).
 - Минус: control plane и приложение делят ресурсы одной ноды.
 - Нейтрально: для второй ноды нужна роль с `kubeadm join` и проверка сети Calico между нодами.
@@ -81,6 +81,6 @@ related: [ADR-03, ADR-05]
 ## Ссылки
 
 - Код: `ansible/site.yml`, `ansible/roles/kubeadm/`, `ansible/inventory/hosts.example.yml`
-- Связанные ADR: ADR-03, ADR-05
+- Связанные ADR: ADR-02, ADR-03, ADR-05, ADR-07, ADR-08
 - Требования: [docs/task/case.md](../task/case.md), [docs/task/qa.md](../task/qa.md)
 - Документация: <https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/create-cluster-kubeadm/>

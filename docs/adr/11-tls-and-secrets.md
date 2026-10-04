@@ -85,7 +85,8 @@ TLS:
 
 - `make verify`: «HTTPS with the cert-manager CA -> 'Hello World!'»: `curl --cacert` с CA из Secret
   `mts-hack-ca` к `https://app.mts-hack.local:30443/`. Header-, path- и split-проверки тоже идут по HTTPS.
-- CI: workflow `security`, job «secrets in git history (gitleaks)»; хук gitleaks в pre-commit (job «lint and validate» в `ci`).
+- CI: workflow `security`, job «secrets in git history (gitleaks)». В job «lint and validate» хук gitleaks пропущен
+  (`SKIP`), локально он работает в pre-commit (`make hooks`).
 - Вручную: `make ca-cert`, затем `curl --cacert mts-hack-ca.crt --resolve app.mts-hack.local:30443:<IP>
   https://app.mts-hack.local:30443/`; `make credentials` и вход в Grafana и Argo CD.
 
