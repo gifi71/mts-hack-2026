@@ -15,7 +15,7 @@ inv = json.load(sys.stdin)
 host = inv["control_plane"]["hosts"][0]
 v = inv["_meta"]["hostvars"][host]
 if v.get("ansible_connection") == "local":
-    print("echo This inventory targets the local machine, no SSH needed.")
+    print("LOCAL")
     sys.exit()
 args = ["ssh"]
 if v.get("ansible_ssh_private_key_file"):
@@ -25,6 +25,11 @@ target = (user + "@" if user else "") + v.get("ansible_host", host)
 # ansible_ssh_common_args is already shell-quoted (ProxyCommand), keep it verbatim.
 print(" ".join(map(shlex.quote, args)), v.get("ansible_ssh_common_args", ""), shlex.quote(target))
 ')
+
+# The inventory targets this machine (README variant 1): run the command here instead of over SSH.
+if [[ $cmd == LOCAL ]]; then
+  if (($#)); then exec bash -c "$*"; else exec bash -l; fi
+fi
 
 if (($#)); then
   eval "exec $cmd $(printf '%q ' "$@")"
