@@ -137,6 +137,9 @@ fileConfigs:
           flush_at_shutdown true
           chunk_limit_size 1m
           retry_max_interval 30s
+          # The buffer sits on the node's root filesystem: cap it instead of the 64GB default.
+          total_limit_size 512m
+          overflow_action drop_oldest_chunk
         </buffer>
       </match>
     </label>

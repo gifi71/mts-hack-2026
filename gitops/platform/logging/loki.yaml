@@ -18,6 +18,8 @@ loki:
           period: 24h
   limits_config:
     retention_period: 72h # same as Prometheus
+    # Retention needs the compactor, not the delete API: keep logs from being deleted by any pod.
+    deletion_mode: disabled
   compactor:
     retention_enabled: true
     delete_request_store: filesystem
