@@ -170,9 +170,10 @@ Ansible и коллекции `make deploy` ставит сам в `.venv`, их
 
 ### Вариант 1. Прямо на ВМ (самый короткий)
 
-На чистой Ubuntu 24.04:
+На чистой Ubuntu 24.04 (в cloud image нет `make` и `python3-venv`):
 
 ```bash
+sudo apt-get update && sudo apt-get install -y make git python3-venv
 git clone https://github.com/gifi71/mts-hack-2026.git && cd mts-hack-2026
 export INVENTORY=ansible/inventory/localhost.yml
 make deploy    # 15-20 минут на ВМ, в основном скачивание образов
