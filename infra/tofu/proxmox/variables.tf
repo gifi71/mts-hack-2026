@@ -19,8 +19,8 @@ variable "vm" {
   default = {}
 
   validation {
-    condition     = var.vm.cpu >= 2 && var.vm.memory >= 6144 && var.vm.disk >= 25
-    error_message = "vm: at least 2 vCPU, 6144 MiB RAM and 25 GiB disk are required for the stack."
+    condition     = var.vm.cpu >= 2 && var.vm.memory >= 8192 && var.vm.disk >= 25
+    error_message = "vm: at least 2 vCPU, 8192 MiB RAM and 25 GiB disk are required for the stack."
   }
 }
 
