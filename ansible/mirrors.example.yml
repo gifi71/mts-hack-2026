@@ -23,7 +23,7 @@ containerd_registry_hosts:
     server: https://registry.k8s.io
     mirrors:
       - https://k8s-mirror.example.internal
-  ghcr.io: # Fluentd image of this repository, kube-webhook-certgen
+  ghcr.io: # Fluentd image of this repository, Kyverno, kube-webhook-certgen
     server: https://ghcr.io
     mirrors:
       - https://ghcr-mirror.example.internal

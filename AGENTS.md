@@ -54,7 +54,7 @@ docs/task/           текст кейса и ответы организато�
 Makefile             единая точка входа, все команды через него
 ```
 
-Новый компонент кластера: `gitops/apps/<comp>.yaml` плюс `gitops/platform/<comp>/`. Не создавай
+Новый компонент кластера: `gitops/apps/templates/<comp>.yaml` плюс `gitops/platform/<comp>/`. Не создавай
 параллельных папок с манифестами.
 
 ## Команды
@@ -69,6 +69,7 @@ make credentials          # пароли Grafana и Argo CD
 make ca-cert              # локальный CA в mts-hack-ca.crt
 make ssh                  # shell на ноде
 make infra-up / infra-down   # ВМ на Proxmox (OpenTofu)
+make infra-init / infra-plan / infra-output   # tofu init, план изменений ВМ, IP и ssh-команда
 make tofu-check           # fmt, validate, tofu test
 make manifests-check      # helm lint + kubeconform по всем отрендеренным манифестам
 make passport             # docs/passport/Паспорт.pdf

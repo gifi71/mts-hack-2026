@@ -63,7 +63,7 @@ deploy: deps check-inventory ## Install Kubernetes and the platform (idempotent,
 	$(VENV)/bin/ansible-playbook -i $(INVENTORY) ansible/site.yml $(ANSIBLE_ARGS)
 
 .PHONY: verify
-verify: deps check-inventory ## Smoke tests: Gateway API routing, Prometheus targets and queries, logs in Loki
+verify: deps check-inventory ## Smoke tests: Gateway API routing, Prometheus targets and queries, SLO rules, Kyverno, logs in Loki
 	$(VENV)/bin/ansible-playbook -i $(INVENTORY) ansible/verify.yml $(ANSIBLE_ARGS)
 
 .PHONY: credentials

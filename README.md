@@ -84,7 +84,7 @@ flowchart LR
 | Angie (приложение) | 1.12.2 | Argo CD, Kustomize |
 | local-path-provisioner | 0.0.37 | Argo CD |
 | Kyverno | 1.19.1 (чарт 3.9.1) | Argo CD, политики в [gitops/platform/kyverno/policies](gitops/platform/kyverno/policies) |
-| Инструменты проверок | Sloth 0.16.0, kube-bench 0.16.0, Kubescape 4.0.15, Trivy, gitleaks, pre-commit-хуки | CI, бинарники по sha256 |
+| Инструменты проверок | Sloth 0.16.0, kube-bench 0.16.0, Kubescape 4.0.15, Trivy, gitleaks, pre-commit-хуки | CI: Sloth, kube-bench и Kubescape бинарниками по sha256, Trivy и gitleaks как GitHub Actions по SHA коммита |
 | ansible-core | 2.21.4 | `make deps` в `.venv`, по хешам из [ansible/requirements.txt](ansible/requirements.txt) |
 | OpenTofu | ≥ 1.8 (проверено на 1.12.6), провайдер bpg/proxmox 0.114.0 | опционально |
 
@@ -123,10 +123,11 @@ Kyverno 1.19.1 официально заявляет Kubernetes 1.33-1.35, ве�
 
 ## Требования
 
-**Проверено на**: Ubuntu 24.04.5 LTS (cloud image, чистая ВМ на Proxmox, 4 vCPU, 8 ГБ RAM, 30 ГБ диска, 2026-10-03) и раннер
-GitHub Actions `ubuntu-24.04` (каждый коммит, job `e2e`).
+**Проверено на**: Ubuntu 24.04.5 LTS (cloud image, чистая ВМ на Proxmox, 4 vCPU, 8 ГБ RAM, 30 ГБ диска, 2026-10-03),
+та же ВМ с 16 ГБ после повышения лимитов памяти подов (2026-10-04) и раннер GitHub Actions `ubuntu-24.04`
+(каждый коммит, job `e2e`). Requests подов в сумме около 4 ГБ, поэтому платформа помещается и на 8 ГБ.
 
-**Узел кластера**: одна ВМ **Ubuntu 24.04** amd64, 4 vCPU, 8 ГБ RAM (рекомендуется 16 ГБ), 30 ГБ свободного места на `/`,
+**Узел кластера**: одна ВМ **Ubuntu 24.04** amd64, 4 vCPU, 8 ГБ RAM (рекомендуется 16 ГБ), 30 ГБ свободного места на `/` (preflight требует не меньше 15 ГБ),
 доступ в интернет, без Docker: его пакет `containerd.io` конфликтует с containerd из Ubuntu, который ставит решение.
 Перед установкой `make deploy` проверяет RAM, место на диске, отсутствие Docker и то, что сеть узла
 не пересекается с подсетями подов (`10.244.0.0/16`) и сервисов (`10.96.0.0/12`). Если пересекается, задайте другие:
@@ -215,6 +216,7 @@ make verify
 == Cluster
 PASS  node Ready: v1.36.5
 PASS  Argo CD: 13 applications Synced/Healthy
+
 == Gateway API (Envoy Gateway, NodePort http://<IP узла>:30080)
 PASS  Gateway edge Programmed (True)
 PASS  curl http://<IP узла>:30080/ -> 'Hello World! (angie v1)'
@@ -224,6 +226,7 @@ PASS  path /v2/ (rewritten to /) -> v2 ('Hello World! (angie v2)')
 PASS  traffic split 90/10: v2 served 9/100 requests
 PASS  curl http://<IP узла>:30080/missing -> 404 (expected 404)
 PASS  curl http://<IP узла>:30080/error -> 500 (expected 500)
+
 == Prometheus
 PASS  target angie-v1 up (2 pods)
 PASS  target angie-v2 up (1 pods)
@@ -231,15 +234,19 @@ PASS  Envoy targets up (2)
 PASS  PromQL angie_http_server_zones_responses{zone="demo"}: 3 series
 PASS  PromQL: Envoy, node-exporter, kube-state-metrics, apiserver metrics (4/4)
 PASS  SLO recording rules (Sloth): availability and latency SLIs (2/2)
+      Angie responses by code: 200=362, 500=1, 404=2
+
 == Admission policies (Kyverno)
 PASS  signed Fluentd image admitted (fluentd:v1.19.3-loki1.3.0-deb20261003-a92b22c@sha256:...)
 PASS  unsigned image of this repository denied: Images of this repository must carry the cosign signature ...
 PASS  PolicyReports for workload policies (94)
+
 == Logging (Fluentd -> Loki)
-PASS  access log (stdout) for ?marker=verify-1791020112-16880 found in Loki:
-      {"time":"2026-10-03T09:35:17+00:00","app":"demo","version":"v1",...,"uri":"/?marker=verify-...","status":200,...}
-PASS  error log (stderr) for /missing?marker=verify-1791020112-16880 found in Loki:
-      ... [error] 7#7: *16 open() "/nonexistent/missing" failed (2: No such file or directory) ...
+PASS  access log (stdout) for ?marker=verify-1791100484-6750 found in Loki:
+      {"logtag":"F","message":"{\"time\":\"2026-10-04T07:54:59+00:00\",\"app\":\"demo\",\"version\":\"v1\",...
+PASS  error log (stderr) for /missing?marker=verify-1791100484-6750 found in Loki:
+      {"logtag":"F","message":"2026/10/04 07:54:59 [error] 7#7: *45 open() \"/nonexistent/missing\" failed (2: No such file or directory), ...
+
 All checks passed.
 ```
 
@@ -322,7 +329,7 @@ Prometheus ставится kube-prometheus-stack (Prometheus Operator). Что 
 | Envoy Gateway | контроллер | `ServiceMonitor envoy-gateway` |
 | Узел | CPU, RAM, диск, сеть | node-exporter |
 | Kubernetes | состояние объектов, apiserver, etcd, scheduler, controller-manager, kubelet/cAdvisor, kube-proxy, CoreDNS | kube-state-metrics и мониторы чарта; метрики control plane открыты в конфиге kubeadm |
-| Платформа | Argo CD, cert-manager, Fluentd, Calico (Felix) | ServiceMonitor каждого компонента |
+| Платформа | Argo CD, cert-manager, Fluentd, Calico (Felix), Kyverno | ServiceMonitor каждого компонента |
 
 Проверка в UI: `https://prometheus.mts-hack.local:30443/targets` или через API на узле:
 
@@ -355,7 +362,8 @@ q 'sum by (envoy_cluster_name) (rate(envoy_cluster_upstream_rq_total[5m]))'
 2. добавляет метаданные Kubernetes (namespace, pod, labels);
 3. access-лог Angie пишется в stdout в JSON, Fluentd разбирает его на поля: `status`, `uri`, `request_time`, `version`, `request_id`;
 4. error-лог Angie пишется в stderr и попадает в Loki с меткой `stream="stderr"`;
-5. отправляет в **Loki** с метками `namespace`, `pod`, `container`, `app`, `stream`.
+5. отправляет в **Loki** с метками `namespace`, `pod`, `container`, `app` (из `app.kubernetes.io/name`, у приложения `angie`),
+   `stream` и постоянными `cluster="mts-hack"`, `collector="fluentd"`.
 
 Чтобы получить ошибки, в приложении есть `/missing` (404 и строка в error-логе) и `/error` (500).
 
@@ -411,7 +419,7 @@ LogQL для Grafana (Explore → Loki):
   ```
 - **Меньше зависимости от Docker Hub**: containerd тянет образы `docker.io` (Envoy, Grafana, Loki и др.) сначала через зеркало `mirror.gcr.io`, чарт Envoy Gateway завендорен, Calico ставится из GitHub Releases.
 - **Надёжность приложения**: 3 реплики, readiness и liveness probes, PodDisruptionBudget, rolling update без простоя.
-- **Наблюдаемость платформы**: метрики control plane, Argo CD, cert-manager, Fluentd, Calico.
+- **Наблюдаемость платформы**: метрики control plane, Argo CD, cert-manager, Fluentd, Calico, Kyverno.
   Дашборды лежат в [gitops/platform/monitoring/manifests/dashboards](gitops/platform/monitoring/manifests/dashboards), Grafana подхватывает их из ConfigMap:
   свой «MTS Hack: gateway, app, logs», официальные ArgoCD, Envoy Gateway Global, Envoy Global, Envoy Clusters,
   SLO-дашборды Sloth «SLO / Detail» и «High level Sloth SLOs». Дашборд Kyverno ставит его чарт,
@@ -500,7 +508,7 @@ TODO.md               что осталось сделать
   недоступный Sigstore блокировали бы все новые поды. Неверная подпись отклоняется, когда Sigstore доступен;
   без него поды с образами этого репозитория создаются без проверки (с задержкой до 20 с на таймаут webhook).
 - **CIS: 4 принятых исключения.** etcd под root (так ставит kubeadm), нет serving-сертификатов kubelet от CA кластера,
-  controller-manager и scheduler слушают IP узла ради метрик. Бенчмарк `cis-1.12` рассчитан на Kubernetes 1.32-1.34,
+  controller-manager и scheduler слушают все интерфейсы ради метрик. Бенчмарк `cis-1.12` рассчитан на Kubernetes 1.32-1.34,
   отдельного для 1.36 в kube-bench пока нет.
 - **Fluentd работает от root.** Ему нужен доступ к `/var/log` ноды, поэтому namespace `logging` не под PSA `restricted`.
 

@@ -11,7 +11,7 @@ related: [ADR-01, ADR-03, ADR-04, ADR-06]
 > подпись сама ничего не запрещает, выбрали Kyverno 1.19 с проверкой подписи при admission, kube-bench
 > для CIS и Kubescape для манифестов и не стали брать Gatekeeper, policy-controller и встроенный
 > ValidatingAdmissionPolicy, чтобы подпись и базовые требования проверялись автоматически, приняв
-> около 410 МБ RAM на Kyverno и `failurePolicy: Ignore` на одной ноде.
+> около 250 МБ RAM на Kyverno и `failurePolicy: Ignore` на одной ноде.
 
 ## Контекст и проблема
 
@@ -70,9 +70,10 @@ related: [ADR-01, ADR-03, ADR-04, ADR-06]
 
 - Плюс: неподписанный образ этого репозитория не запустится, даже если его указать в манифесте.
 - Плюс: настройки кластера и манифестов сверяются с CIS, NSA и MITRE ATT&CK, а не только с AGENTS.md.
-- Минус: около 410 МБ RAM на Kyverno (замер на стенде, лимиты admission controller в values не заданы).
+- Минус: около 250 МБ RAM на три контроллера Kyverno (пик на стенде за сутки). Лимиты заданы с запасом:
+  admission и reports по 1Gi, background 512Mi (`gitops/platform/kyverno/values.yaml`).
 - Минус: application controller Argo CD кэширует CRD Kyverno с большими схемами. Лимит памяти controller
-  поднят до 1536Mi (`gitops/platform/argocd/values.yaml`): с 768Mi его убивал OOM при старте.
+  поднят до 3Gi, request 768Mi (`gitops/platform/argocd/values.yaml`): с лимитом 768Mi его убивал OOM при старте.
 - Минус: без доступа к Sigstore с ноды поды с образами этого репозитория создаются без проверки
   (`failurePolicy: Ignore`), с задержкой до 20 с на таймаут webhook.
 - Минус: Kyverno 1.19.1 официально заявляет Kubernetes 1.33-1.35, kube-bench 0.16 знает бенчмарки до

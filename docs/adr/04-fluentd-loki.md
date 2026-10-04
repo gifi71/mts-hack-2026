@@ -7,7 +7,7 @@ related: [ADR-03, ADR-06, ADR-07]
 
 # 04. Fluentd → Loki, свой образ Fluentd
 
-> **Коротко.** В контексте сбора логов демо-приложения на ноде с 8 ГБ RAM, столкнувшись с тем, что ТЗ
+> **Коротко.** В контексте сбора логов демо-приложения на одной ноде (минимум 8 ГБ RAM), столкнувшись с тем, что ТЗ
 > разрешает только Fluentd или Filebeat, а готового DaemonSet-образа Fluentd с выводом в Loki нет, выбрали
 > Fluentd в Loki со своим образом, собранным и подписанным в CI, и не стали брать Elasticsearch,
 > OpenSearch и VictoriaLogs, чтобы метрики и логи смотрелись в одной Grafana при небольшом расходе памяти,
@@ -26,7 +26,7 @@ related: [ADR-03, ADR-06, ADR-07]
 - Мониторинг и логирование: 20 баллов, оценивается и качество подхода к observability
   (docs/task/case.md, критерий 3).
 - Агрегатор логов в кластере (например, Loki) рядом с Prometheus засчитывается как плюс (docs/task/qa.md).
-- Нода одна, 8 ГБ RAM: на ней же control plane, Prometheus, Argo CD и Kyverno (ADR-01).
+- Нода одна, минимум 8 ГБ RAM: на ней же control plane, Prometheus, Argo CD и Kyverno (ADR-01).
 - Образ должен быть публичным или собираться из материалов репозитория (docs/task/case.md).
 
 ## Рассмотренные варианты
@@ -44,8 +44,8 @@ related: [ADR-03, ADR-06, ADR-07]
 - **Fluentd 1.19.3** DaemonSet (чарт `fluentd` 0.6.0 с fluent.github.io, sync-wave 1, namespace `logging`)
   читает `/var/log/containers/*.log` парсером CRI, добавляет метаданные фильтром `kubernetes_metadata` и
   разбирает JSON access-лога Angie. Конфигурация в `gitops/platform/logging/fluentd.yaml`.
-- Выход `@type loki` в `http://loki.logging.svc:3100`. Метки Loki: `namespace`, `pod`, `container`, `app`,
-  `stream`. Поля access-лога (`status`, `uri`, `request_time`, `version`) остаются в JSON-строке.
+- Выход `@type loki` в `http://loki.logging.svc:3100`. Метки Loki: `namespace`, `pod`, `container`, `app`
+  (из `app.kubernetes.io/name`, у приложения `angie`), `stream` и постоянные `cluster`, `collector`. Поля access-лога (`status`, `uri`, `request_time`, `version`) остаются в JSON-строке.
 - **Loki 3.7.8** (чарт 18.13.7 с grafana-community.github.io, sync-wave -1): monolithic, хранилище filesystem
   на PVC 5Gi (local-path), `retention_period: 72h` (3 дня, как у Prometheus). Конфигурация в
   `gitops/platform/logging/loki.yaml`.
@@ -68,7 +68,7 @@ related: [ADR-03, ADR-06, ADR-07]
 
 ### Последствия
 
-- Плюс: метрики и логи в одной Grafana, хранилище логов занимает один под с лимитом 1 ГБ RAM.
+- Плюс: метрики и логи в одной Grafana, хранилище логов занимает один под (около 150 МБ RAM на стенде, лимит 2Gi).
 - Плюс: логи приложения структурированы, в Loki по ним работают фильтры LogQL (`| json | status >= 500`).
 - Плюс: образ коллектора проверяется Trivy до публикации, его подпись проверяет Kyverno при admission (ADR-07).
 - Минус: Fluentd работает от root (нужен `/var/log` ноды), namespace `logging` без PSA `restricted`.
@@ -97,7 +97,7 @@ related: [ADR-03, ADR-06, ADR-07]
 ### Fluentd → OpenSearch
 
 - Плюс: полнотекстовый поиск, открытая лицензия.
-- Минус: 2-3 ГБ RAM, на ноде с 8 ГБ это слишком много.
+- Минус: 2-3 ГБ RAM, на ноде с минимальными 8 ГБ это слишком много.
 
 ### Fluentd → VictoriaLogs
 
