@@ -605,7 +605,7 @@
             "type": "loki",
             "uid": "loki"
           },
-          "expr": "{namespace=\"demo\", app=\"angie\"} | json | line_format \"{{.status}} {{.method}} {{.uri}} {{.version}} {{.request_time}}s\""
+          "expr": "{namespace=\"demo\", app=\"angie\", stream=\"stdout\"} | json | line_format \"{{.status}} {{.method}} {{.uri}} {{.version}} {{.request_time}}s\""
         }
       ]
     }
