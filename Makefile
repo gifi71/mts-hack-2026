@@ -57,6 +57,7 @@ lock: ## Regenerate the hashed Python locks (Ansible, CI tools) from their requi
 .PHONY: check-inventory
 check-inventory:
 	@test -n "$(INVENTORY)" || { echo "No inventory: on the VM itself use INVENTORY=ansible/inventory/localhost.yml, over SSH create ansible/inventory/hosts.yml, on Proxmox run make infra-up"; exit 1; }
+	@test -f "$(INVENTORY)" || { echo "Inventory $(INVENTORY) not found"; exit 1; }
 
 .PHONY: deploy
 deploy: deps check-inventory ## Install Kubernetes and the platform (idempotent, safe to re-run)
