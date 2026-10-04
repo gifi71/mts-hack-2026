@@ -55,15 +55,10 @@ ansible/.facts_cache/
 .ansible/
 collections/ansible_collections/
 
-# --- Helm / Kubernetes ---
-**/charts/*.tgz
-.helmfile/
-artifacts/
+# --- Helm ---
 *.tgz
 
-# --- Vagrant / VMs ---
-.vagrant/
-*.box
+# --- VM images ---
 *.qcow2
 *.iso
 
@@ -75,9 +70,6 @@ venv/
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
-
-# --- Node (docs tooling, linters) ---
-node_modules/
 
 # --- Build / scan outputs ---
 dist/
